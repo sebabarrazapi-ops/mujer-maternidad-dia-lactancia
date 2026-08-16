@@ -46,6 +46,13 @@
   const testimonialScript = document.createElement('script');
   testimonialScript.src = '/testimonials.js';
   testimonialScript.defer = true;
+  testimonialScript.addEventListener('load', () => {
+    const authorizedTestimonials = (window.MYM_TESTIMONIALS || []).filter((item) => item.authorization_confirmed === true);
+    if (!authorizedTestimonials.length && testimonialsPlaceholder) {
+      testimonialsPlaceholder.hidden = true;
+      testimonialsPlaceholder.setAttribute('aria-hidden', 'true');
+    }
+  });
   document.head.appendChild(testimonialScript);
 
   function carryTracking(targetUrl) {
