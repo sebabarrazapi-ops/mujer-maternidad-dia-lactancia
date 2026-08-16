@@ -136,6 +136,12 @@
     if (url) link.href = url;
   });
 
+  document.querySelectorAll('footer p').forEach((paragraph) => {
+    const text = paragraph.textContent.trim().toLowerCase();
+    const isGenericDisclaimer = text.includes('información educativa') || text.includes('fines educativos') || text.includes('no reemplaza una evaluación');
+    if (isGenericDisclaimer) paragraph.remove();
+  });
+
   document.querySelectorAll('footer').forEach((footer) => {
     if (footer.querySelector('[data-edin-credit]')) return;
     const credit = document.createElement('div');
