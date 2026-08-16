@@ -40,6 +40,11 @@
     }
   }
 
+  const testimonialsPlaceholder = document.querySelector('.testimonials-placeholder');
+  if (testimonialsPlaceholder && !testimonialsPlaceholder.id) {
+    testimonialsPlaceholder.id = 'testimonios';
+  }
+
   function carryTracking(targetUrl) {
     try {
       const target = new URL(targetUrl);
