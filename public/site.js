@@ -136,6 +136,22 @@
     if (url) link.href = url;
   });
 
+  document.querySelectorAll('footer').forEach((footer) => {
+    if (footer.querySelector('[data-edin-credit]')) return;
+    const credit = document.createElement('div');
+    credit.setAttribute('data-edin-credit', 'true');
+    credit.textContent = 'Sitio web creado por Servicio de Gestión EDIN';
+    credit.style.maxWidth = '1180px';
+    credit.style.margin = '18px auto 0';
+    credit.style.padding = '14px 24px 0';
+    credit.style.borderTop = '1px solid rgba(255,255,255,.16)';
+    credit.style.fontSize = '.82rem';
+    credit.style.lineHeight = '1.4';
+    credit.style.opacity = '.72';
+    credit.style.textAlign = 'center';
+    footer.appendChild(credit);
+  });
+
   const pageKey = document.body.dataset.analyticsPage || '';
   const pageMeta = content.analytics?.[pageKey] || {
     pageId: pageKey || 'unknown',
