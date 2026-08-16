@@ -1,0 +1,72 @@
+(() => {
+  const cfg = window.LANDING_CONFIG || {};
+  const products = cfg.products || {};
+
+  function carryTracking(targetUrl) {
+    try {
+      const target = new URL(targetUrl);
+      const current = new URL(window.location.href);
+      const keys = ["utm_source","utm_medium","utm_campaign","utm_content","utm_term","fbclid"];
+      keys.forEach((key) => {
+        const value = current.searchParams.get(key);
+        if (value && !target.searchParams.has(key)) target.searchParams.set(key, value);
+      });
+      return target.toString();
+    } catch {
+      return targetUrl;
+    }
+  }
+
+  function replaceText(root, replacements) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach((node) => {
+      let value = node.nodeValue;
+      replacements.forEach(([from, to]) => {
+        value = value.split(from).join(to);
+      });
+      node.nodeValue = value;
+    });
+  }
+
+  replaceText(document.body, [
+    ["$59.980", "US$66"],
+    ["$49.990", "US$55"],
+    ["$29.990", "US$33"],
+    ["Ahorras $9.990", "Ahorras US$11"],
+    ["Verónica Valencia Yáñez", "Verónica Andrea Valencia Yáñez"],
+    ["El enlace del Día Completo se habilitará apenas esté disponible en Hotmart.", "También puedes elegir el Día de Lactancia completo por US$55."],
+    ["Combo disponible próximamente", "Reservar Día Completo · US$55"],
+    ["Enlace del combo pendiente", "Reservar Día Completo · US$55"]
+  ]);
+
+  document.querySelectorAll(".checkout-link").forEach((link) => {
+    const key = link.dataset.product;
+    const checkout = products[key]?.checkout;
+    if (!checkout) {
+      link.classList.add("is-disabled");
+      link.setAttribute("aria-disabled", "true");
+      return;
+    }
+    link.href = carryTracking(checkout);
+    link.target = "_self";
+  });
+
+  const combo = products.combo || {};
+  document.querySelectorAll(".combo-link").forEach((link) => {
+    if (cfg.comboEnabled && combo.checkout) {
+      link.classList.remove("is-disabled");
+      link.removeAttribute("aria-disabled");
+      link.textContent = "Reservar Día Completo · US$55";
+      link.href = carryTracking(combo.checkout);
+      link.target = "_self";
+    }
+  });
+
+  if (cfg.metaPixelId) {
+    const s = document.createElement("script");
+    s.text = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${cfg.metaPixelId}');fbq('track','PageView');`;
+    document.head.appendChild(s);
+  }
+})();
