@@ -2,10 +2,20 @@
   const cfg = window.LANDING_CONFIG || {};
   const products = cfg.products || {};
 
+  if (!document.querySelector('link[data-brand-styles]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/brand.css';
+    link.dataset.brandStyles = 'true';
+    document.head.appendChild(link);
+  }
+
   const brandLink = document.querySelector('.site-header .brand');
   if (brandLink) {
     brandLink.href = '/';
+    brandLink.classList.add('brand-logo-link');
     brandLink.setAttribute('aria-label', 'Volver al inicio de Mujer y Maternidad');
+    brandLink.innerHTML = '<img class="brand-logo compact" src="/assets/logo-mujer-maternidad.png" alt="Mujer y Maternidad · Verónica Valencia · Matrona" />';
   }
 
   function carryTracking(targetUrl) {
