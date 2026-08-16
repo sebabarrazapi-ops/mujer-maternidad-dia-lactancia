@@ -1,9 +1,6 @@
-name: Phase A Browser QA
+name: Professional Editorial Browser QA
 
 on:
-  push:
-    branches:
-      - feat/global-web-v1-phase-a-20260816
   pull_request:
     branches:
       - main
@@ -47,7 +44,7 @@ jobs:
 
       - name: Run real-browser QA
         run: |
-          cat > /tmp/phase_a_qa.py <<'PY'
+          cat > /tmp/editorial_qa.py <<'PY'
           import json
           from pathlib import Path
           from urllib.parse import urlparse, parse_qs
@@ -64,6 +61,9 @@ jobs:
               print(f"{'PASS' if ok else 'FAIL'} | {name} | {detail}")
               if not ok:
                   failures.append(name)
+
+          def no_overflow(page):
+              return not page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth + 2")
 
           routes = [
               ("home", "/"),
@@ -87,15 +87,21 @@ jobs:
                   response = page.goto(BASE + route, wait_until="domcontentloaded")
                   page.wait_for_timeout(400)
                   check(f"route:{name}:200", response is not None and response.status == 200, f"status={response.status if response else 'NONE'}")
-                  overflow = page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth + 2")
-                  check(f"route:{name}:no-horizontal-overflow-desktop", not overflow, f"scroll={page.evaluate('document.documentElement.scrollWidth')} client={page.evaluate('document.documentElement.clientWidth')}")
+                  check(f"route:{name}:no-horizontal-overflow-desktop", no_overflow(page), f"scroll={page.evaluate('document.documentElement.scrollWidth')} client={page.evaluate('document.documentElement.clientWidth')}")
 
               page.goto(BASE + "/", wait_until="domcontentloaded")
               page.wait_for_timeout(700)
-              check("home:h1", "Acompañamiento e información" in page.locator("h1").inner_text(), page.locator("h1").inner_text())
+              home_h1 = page.locator("h1").inner_text()
+              check("home:h1-current-copy", "Educación, acompañamiento y comunidad" in home_h1, home_h1)
               check("home:journey-cards", page.locator(".journey-card").count() >= 6, f"count={page.locator('.journey-card').count()}")
               check("home:trust-signals", page.locator(".trust-signal").count() == 4, f"count={page.locator('.trust-signal').count()}")
-              check("home:testimonials-hidden", page.locator("[data-testimonials-section]").count() == 1 and page.locator("[data-testimonials-section]").evaluate("el => el.hidden === true"), "hidden expected")
+              check("home:professional-pillars", page.locator("[data-professional-pillars] article").count() == 4, f"count={page.locator('[data-professional-pillars] article').count()}")
+              home_testimonials = page.locator("[data-testimonials-section]")
+              check("home:testimonials-visible", home_testimonials.count() == 1 and home_testimonials.evaluate("el => el.hidden === false"), "authorized testimonials visible")
+              check("home:testimonial-count", page.locator("[data-testimonials] .testimonial-card").count() == 2, f"count={page.locator('[data-testimonials] .testimonial-card').count()}")
+              check("home:testimonial-anonymous-labels", "Paciente de lactancia" in page.locator("[data-testimonials]").inner_text() and "Participante de taller de lactancia" in page.locator("[data-testimonials]").inner_text(), "anonymous public labels")
+              check("home:rating-visible", "5 estrellas para ambos talleres" in page.locator("[data-testimonials]").inner_text(), "authorized rating")
+              check("home:edin-credit", "Sitio web creado por Servicio de Gestión EDIN" in page.locator("footer").inner_text(), "footer credit")
               logo_src = page.locator(".site-header .brand img").get_attribute("src") or ""
               check("home:svg-logo", logo_src.endswith("/assets/brand-logo.svg"), logo_src)
               favicon = page.locator('link[rel="icon"]').get_attribute("href") or ""
@@ -103,14 +109,35 @@ jobs:
               check("home:canonical", page.locator('link[rel="canonical"]').get_attribute("href") == "https://mujerymaternidad.cl/", page.locator('link[rel="canonical"]').get_attribute("href") or "")
               page.screenshot(path=str(OUT / "home-desktop.png"), full_page=True)
 
-              landing_url = BASE + "/dia-de-lactancia/?utm_source=qa&utm_medium=preview&utm_campaign=phase_a&utm_content=browser&fbclid=QA123"
+              page.goto(BASE + "/servicios/", wait_until="domcontentloaded")
+              page.wait_for_timeout(700)
+              service_text = page.locator("main").inner_text()
+              check("services:category-count", page.locator(".service-detail-card").count() == 4, f"count={page.locator('.service-detail-card').count()}")
+              for label in ["Consultas personalizadas", "Talleres educativos y de bienestar", "Círculos de mujeres y redes de comunidad", "eBooks y recursos digitales"]:
+                  check(f"services:contains:{label}", label in service_text, label)
+              check("services:topics-rendered", page.locator(".service-topic-list li").count() >= 15, f"count={page.locator('.service-topic-list li').count()}")
+              page.screenshot(path=str(OUT / "servicios-desktop.png"), full_page=True)
+
+              page.goto(BASE + "/sobre-mi/", wait_until="domcontentloaded")
+              page.wait_for_timeout(700)
+              about_text = page.locator("main").inner_text().lower()
+              check("about:h1-veronica", "Verónica Andrea Valencia Yáñez" in page.locator("h1").inner_text(), page.locator("h1").inner_text())
+              check("about:vocation", "matrona de profesión y vocación" in about_text, "professional bio")
+              check("about:hormonal-health", "salud hormonal femenina" in about_text, "confirmed supplied wording")
+              check("about:community", "poder de la red" in about_text, "community vision")
+              page.screenshot(path=str(OUT / "sobre-mi-desktop.png"), full_page=True)
+
+              landing_url = BASE + "/dia-de-lactancia/?utm_source=qa&utm_medium=preview&utm_campaign=editorial_v1&utm_content=browser&fbclid=QA123"
               page.goto(landing_url, wait_until="domcontentloaded")
               page.wait_for_timeout(700)
               check("landing:section-fit", page.locator(".fit-section").count() == 1, "fit-section")
               check("landing:section-how-to-book", page.locator(".purchase-steps-section").count() == 1, "purchase-steps-section")
               check("landing:next-step", page.locator(".next-step-section").count() == 1, "next-step-section")
               test_section = page.locator("#testimonios")
-              check("landing:testimonials-placeholder-hidden", test_section.count() == 1 and test_section.evaluate("el => el.hidden === true"), f"count={test_section.count()}")
+              check("landing:testimonials-visible", test_section.count() == 1 and test_section.evaluate("el => el.hidden === false"), "authorized testimonials visible")
+              check("landing:testimonial-count", test_section.locator(".testimonial-card").count() == 2, f"count={test_section.locator('.testimonial-card').count()}")
+              check("landing:rating-visible", "5 estrellas para ambos talleres" in test_section.inner_text(), "authorized rating")
+              check("landing:edin-credit", "Sitio web creado por Servicio de Gestión EDIN" in page.locator("footer").inner_text(), "footer credit")
               check("landing:canonical", page.locator('link[rel="canonical"]').get_attribute("href") == "https://mujerymaternidad.cl/dia-de-lactancia/", page.locator('link[rel="canonical"]').get_attribute("href") or "")
               landing_logo = page.locator(".site-header .brand img").get_attribute("src") or ""
               check("landing:svg-logo", landing_logo.endswith("/assets/brand-logo.svg"), landing_logo)
@@ -127,7 +154,7 @@ jobs:
                   check(f"landing:{key}:hotmart-product", product_id in parsed.path, href)
                   check(f"landing:{key}:utm-source", qs.get("utm_source") == ["qa"], href)
                   check(f"landing:{key}:utm-medium", qs.get("utm_medium") == ["preview"], href)
-                  check(f"landing:{key}:utm-campaign", qs.get("utm_campaign") == ["phase_a"], href)
+                  check(f"landing:{key}:utm-campaign", qs.get("utm_campaign") == ["editorial_v1"], href)
                   check(f"landing:{key}:fbclid", qs.get("fbclid") == ["QA123"], href)
               page.screenshot(path=str(OUT / "dia-lactancia-desktop.png"), full_page=True)
 
@@ -137,27 +164,36 @@ jobs:
               mpage.on("pageerror", lambda exc: m_js_errors.append(str(exc)))
               mpage.on("requestfailed", lambda req: m_local_failed.append(f"{req.method} {req.url} :: {req.failure}") if req.url.startswith(BASE) else None)
 
+              mobile_routes = [
+                  ("home", "/", "home-mobile.png"),
+                  ("servicios", "/servicios/", "servicios-mobile.png"),
+                  ("sobre-mi", "/sobre-mi/", "sobre-mi-mobile.png"),
+                  ("landing", "/dia-de-lactancia/", "dia-lactancia-mobile.png"),
+              ]
+              for name, route, filename in mobile_routes:
+                  mpage.goto(BASE + route, wait_until="domcontentloaded")
+                  mpage.wait_for_timeout(700)
+                  check(f"{name}:no-horizontal-overflow-mobile", no_overflow(mpage), f"scroll={mpage.evaluate('document.documentElement.scrollWidth')} client={mpage.evaluate('document.documentElement.clientWidth')}")
+                  mpage.screenshot(path=str(OUT / filename), full_page=True)
               mpage.goto(BASE + "/", wait_until="domcontentloaded")
-              mpage.wait_for_timeout(700)
-              overflow = mpage.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth + 2")
-              check("home:no-horizontal-overflow-mobile", not overflow, f"scroll={mpage.evaluate('document.documentElement.scrollWidth')} client={mpage.evaluate('document.documentElement.clientWidth')}")
               check("home:mobile-menu-visible", mpage.locator("[data-menu-toggle]").is_visible(), "390px viewport")
-              mpage.screenshot(path=str(OUT / "home-mobile.png"), full_page=True)
-
+              check("home:testimonials-mobile-visible", mpage.locator("[data-testimonials] .testimonial-card").count() == 2, f"count={mpage.locator('[data-testimonials] .testimonial-card').count()}")
               mpage.goto(BASE + "/dia-de-lactancia/", wait_until="domcontentloaded")
-              mpage.wait_for_timeout(700)
-              overflow = mpage.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth + 2")
-              check("landing:no-horizontal-overflow-mobile", not overflow, f"scroll={mpage.evaluate('document.documentElement.scrollWidth')} client={mpage.evaluate('document.documentElement.clientWidth')}")
               check("landing:primary-combo-visible-mobile", mpage.locator(".hero .combo-link").is_visible(), "390px viewport")
-              mpage.screenshot(path=str(OUT / "dia-lactancia-mobile.png"), full_page=True)
+              check("landing:testimonials-mobile-visible", mpage.locator("#testimonios .testimonial-card").count() == 2, f"count={mpage.locator('#testimonios .testimonial-card').count()}")
 
               site_js = Path("public/site.js").read_text(encoding="utf-8")
               landing_js = Path("public/dia-de-lactancia/main.js").read_text(encoding="utf-8")
+              testimonials_js = Path("public/testimonials.js").read_text(encoding="utf-8")
               check("privacy:no-JourneySelection", "JourneySelection" not in site_js, "health-stage selection not sent to Meta")
+              check("privacy:testimonials-require-authorization", "authorization_confirmed === true" in site_js and "authorization_confirmed === true" in landing_js, "publication guards")
+              check("privacy:testimonials-authorized-source", testimonials_js.count("authorization_confirmed: true") == 2, "two authorized testimonials")
               check("tracking:no-duplicate-InitiateCheckout", "InitiateCheckout" not in landing_js, "Hotmart remains checkout event source")
               check("tracking:landing-page-type-workshop", "page_type:'WORKSHOP'" in landing_js, "normalized taxonomy")
               check("assets:brand-logo-exists", Path("public/assets/brand-logo.svg").exists(), "")
               check("assets:brand-mark-exists", Path("public/assets/brand-mark.svg").exists(), "")
+              check("editorial:admin-guide-exists", Path("CONTENT_ADMIN.md").exists(), "lightweight editing guide")
+              check("editorial:testimonials-source-exists", Path("public/testimonials.js").exists(), "authorized testimonial source")
               check("browser:no-desktop-js-errors", not js_errors, json.dumps(js_errors, ensure_ascii=False))
               check("browser:no-mobile-js-errors", not m_js_errors, json.dumps(m_js_errors, ensure_ascii=False))
               check("browser:no-local-failed-requests-desktop", not local_failed, json.dumps(local_failed, ensure_ascii=False))
@@ -172,7 +208,7 @@ jobs:
               "total": len(checks),
           }
           (OUT / "qa-results.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
-          lines = ["# Mujer y Maternidad — Phase A Browser QA", "", f"**Status:** `{summary['status']}`", f"**Checks:** `{summary['passed']}/{summary['total']}`", ""]
+          lines = ["# Mujer y Maternidad — Professional Editorial Browser QA", "", f"**Status:** `{summary['status']}`", f"**Checks:** `{summary['passed']}/{summary['total']}`", ""]
           lines += [f"- {'PASS' if x['pass'] else 'FAIL'} — `{x['name']}` — {x['detail']}" for x in checks]
           (OUT / "qa-summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
           print(f"BROWSER_QA_STATUS={summary['status']}")
@@ -181,7 +217,7 @@ jobs:
               print("BROWSER_QA_FAILURES=" + ",".join(failures))
               raise SystemExit(1)
           PY
-          python /tmp/phase_a_qa.py
+          python /tmp/editorial_qa.py
 
       - name: Show QA summary
         if: always()
@@ -194,6 +230,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mujer-maternidad-phase-a-browser-qa
+          name: mujer-maternidad-professional-editorial-browser-qa
           path: qa-artifacts/
           if-no-files-found: error
