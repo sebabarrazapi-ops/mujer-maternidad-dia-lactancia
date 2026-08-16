@@ -10,14 +10,16 @@
   <meta property="og:type" content="website" />
   <meta name="theme-color" content="#b86b63" />
   <link rel="stylesheet" href="/site.css" />
+  <script src="/content.js"></script>
 </head>
 <body>
 <header class="site-header">
   <div class="container nav">
-    <a class="brand" href="/">Mujer y Maternidad</a>
+    <a class="brand" href="/" aria-label="Ir al inicio de Mujer y Maternidad">Mujer y Maternidad</a>
     <nav class="nav-links" aria-label="Navegación principal">
       <a href="/servicios/">Servicios</a>
       <a href="/talleres/">Talleres</a>
+      <a href="/recursos/">eBooks y recursos</a>
       <a href="/sobre-mi/">Sobre Verónica</a>
       <a href="/contacto/">Contacto</a>
       <a class="nav-cta" href="/dia-de-lactancia/">Día de Lactancia</a>
@@ -29,9 +31,9 @@
   <section class="hero">
     <div class="container hero-grid">
       <div>
-        <span class="eyebrow">MUJER Y MATERNIDAD</span>
-        <h1>Información clara para vivir tu maternidad con más confianza</h1>
-        <p class="hero-lead">Un espacio creado por <strong>Verónica Andrea Valencia Yáñez, Matrona</strong>, para acompañarte con educación, orientación y herramientas prácticas en distintas etapas de la maternidad y salud de la mujer.</p>
+        <span class="eyebrow" data-content="home.heroEyebrow">MUJER Y MATERNIDAD</span>
+        <h1 data-content="home.heroTitle">Información clara para vivir tu maternidad con más confianza</h1>
+        <p class="hero-lead" data-content="home.heroLead">Un espacio creado por Verónica Andrea Valencia Yáñez, Matrona, para acompañarte con educación, orientación y herramientas prácticas en distintas etapas de la maternidad y salud de la mujer.</p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="/servicios/">Conocer servicios</a>
           <a class="btn btn-secondary" href="/talleres/">Ver talleres</a>
@@ -74,7 +76,19 @@
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="recursos">
+    <div class="container">
+      <div class="section-heading center">
+        <span class="eyebrow" data-content="home.resourcesEyebrow">RECURSOS Y PRODUCTOS DIGITALES</span>
+        <h2 data-content="home.resourcesTitle">Aprende a tu ritmo con recursos prácticos</h2>
+        <p data-content="home.resourcesLead">Aquí iremos reuniendo eBooks, guías, descargables y otros productos digitales de Mujer y Maternidad.</p>
+      </div>
+      <div class="grid service-grid" data-digital-products></div>
+      <div class="actions" style="justify-content:center"><a class="btn btn-secondary" href="/recursos/">Ver todos los recursos</a></div>
+    </div>
+  </section>
+
+  <section class="section section-soft">
     <div class="container split">
       <img class="profile-photo" src="https://hotmart.s3.amazonaws.com/profile_pictures/819f171f-e2e6-4ca8-93f9-af13ea2b0420/CopiadeIMG_9657.jpeg" alt="Verónica Andrea Valencia Yáñez" />
       <div>
@@ -88,12 +102,12 @@
     </div>
   </section>
 
-  <section class="section section-soft">
+  <section class="section">
     <div class="container narrow" style="text-align:center">
       <span class="eyebrow">EMPECEMOS POR LO QUE NECESITAS</span>
-      <h2>Servicios y talleres en un solo lugar</h2>
-      <p class="lead">Esta web será el punto central de Mujer y Maternidad para consultar servicios, próximas actividades y páginas de inscripción.</p>
-      <div class="actions" style="justify-content:center"><a class="btn btn-primary" href="/servicios/">Ver servicios</a><a class="btn btn-secondary" href="/talleres/">Ver talleres</a></div>
+      <h2>Servicios, talleres y recursos en un solo lugar</h2>
+      <p class="lead">Esta web será el punto central de Mujer y Maternidad para consultar servicios, próximas actividades, productos digitales y páginas de inscripción.</p>
+      <div class="actions" style="justify-content:center"><a class="btn btn-primary" href="/servicios/">Ver servicios</a><a class="btn btn-secondary" href="/recursos/">Ver eBooks y recursos</a></div>
     </div>
   </section>
 </main>
