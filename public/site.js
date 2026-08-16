@@ -63,7 +63,7 @@
     const stages = (content.journeyStages || []).filter((item) => item.status === 'active');
     journeyRoot.innerHTML = stages.map((item) => {
       const attrs = item.external ? ' target="_blank" rel="noopener noreferrer"' : '';
-      return `<a class="journey-card" href="${item.url}"${attrs} data-journey-id="${item.id}"><small>${item.eyebrow || ''}</small><strong>${item.title}</strong><p>${item.description}</p><span class="journey-cta">Ver opciones →</span></a>`;
+      return `<a class="journey-card" href="${item.url}"${attrs}><small>${item.eyebrow || ''}</small><strong>${item.title}</strong><p>${item.description}</p><span class="journey-cta">Ver opciones →</span></a>`;
     }).join('');
   }
 
@@ -136,15 +136,4 @@
     script.text = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${pixelId}');fbq('track','PageView',${safeMeta});`;
     document.head.appendChild(script);
   }
-
-  document.querySelectorAll('[data-journey-id]').forEach((link) => {
-    link.addEventListener('click', () => {
-      if (window.fbq) {
-        window.fbq('trackCustom', 'JourneySelection', {
-          journey_id: link.dataset.journeyId,
-          page_path: window.location.pathname
-        });
-      }
-    });
-  });
 })();
