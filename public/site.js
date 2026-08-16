@@ -1,4 +1,7 @@
 (() => {
+  const BRAND_LOGO = '/assets/brand-logo.svg';
+  const BRAND_MARK = '/assets/brand-mark.svg';
+
   const ensureStylesheet = (href, marker) => {
     if (document.querySelector(`link[${marker}]`)) return;
     const link = document.createElement('link');
@@ -11,12 +14,27 @@
   ensureStylesheet('/brand.css', 'data-brand-styles');
   ensureStylesheet('/phase-a.css', 'data-phase-a-styles');
 
+  let favicon = document.querySelector('link[rel="icon"]');
+  if (!favicon) {
+    favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    document.head.appendChild(favicon);
+  }
+  favicon.type = 'image/svg+xml';
+  favicon.href = BRAND_MARK;
+
   const applyLogo = () => {
     document.querySelectorAll('.site-header .brand').forEach((brand) => {
       brand.href = '/';
       brand.classList.add('brand-logo-link');
       brand.setAttribute('aria-label', 'Ir al inicio de Mujer y Maternidad');
-      brand.innerHTML = '<img class="brand-logo compact" src="/assets/logo-mujer-maternidad.png" alt="Mujer y Maternidad · Verónica Valencia · Matrona" />';
+      brand.innerHTML = `<img class="brand-logo compact" src="${BRAND_LOGO}" alt="Mujer y Maternidad · Verónica Valencia · Matrona" />`;
+      const img = brand.querySelector('img');
+      if (img) {
+        img.addEventListener('error', () => {
+          brand.innerHTML = '<span class="brand-fallback">Mujer y Maternidad</span>';
+        }, { once: true });
+      }
     });
   };
 
