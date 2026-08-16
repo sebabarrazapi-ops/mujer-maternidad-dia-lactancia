@@ -51,10 +51,15 @@
 
   const content = window.MYM_CONTENT || {};
 
-  document.querySelectorAll('[data-content]').forEach((node) => {
-    const path = node.dataset.content.split('.');
+  const readContentPath = (pathString) => {
+    const path = pathString.split('.');
     let value = content;
     path.forEach((key) => { value = value?.[key]; });
+    return value;
+  };
+
+  document.querySelectorAll('[data-content]').forEach((node) => {
+    const value = readContentPath(node.dataset.content);
     if (typeof value === 'string') node.textContent = value;
   });
 
@@ -70,6 +75,20 @@
   const trustRoot = document.querySelector('[data-trust-signals]');
   if (trustRoot) {
     trustRoot.innerHTML = (content.trustSignals || []).map((signal) => `<span class="trust-signal">${signal}</span>`).join('');
+  }
+
+  const pillarsRoot = document.querySelector('[data-professional-pillars]');
+  if (pillarsRoot) {
+    pillarsRoot.innerHTML = (content.professional?.pillars || []).map((item) => `<article class="card"><span class="card-tag">MUJER Y MATERNIDAD</span><h3>${item.title}</h3><p>${item.description}</p></article>`).join('');
+  }
+
+  const servicesRoot = document.querySelector('[data-service-categories]');
+  if (servicesRoot) {
+    servicesRoot.innerHTML = (content.servicesPage?.categories || []).map((item) => {
+      const attrs = item.external ? ' target="_blank" rel="noopener noreferrer"' : '';
+      const topics = (item.topics || []).map((topic) => `<li>${topic}</li>`).join('');
+      return `<article class="service-detail-card"><span class="eyebrow">${item.eyebrow || ''}</span><h2>${item.title}</h2><p>${item.description}</p>${topics ? `<ul class="service-topic-list">${topics}</ul>` : ''}<a class="btn btn-secondary" href="${item.ctaUrl}"${attrs}>${item.ctaLabel}</a></article>`;
+    }).join('');
   }
 
   const quickRoot = document.querySelector('[data-quick-links]');
@@ -102,12 +121,12 @@
   const testimonialSection = document.querySelector('[data-testimonials-section]');
   const testimonialRoot = document.querySelector('[data-testimonials]');
   if (testimonialSection && testimonialRoot) {
-    const testimonials = content.testimonials || [];
+    const testimonials = (content.testimonials || []).filter((item) => item.authorization_confirmed === true);
     if (!testimonials.length) {
       testimonialSection.hidden = true;
     } else {
       testimonialSection.hidden = false;
-      testimonialRoot.innerHTML = testimonials.map((item) => `<article class="testimonial-card"><div class="testimonial-mark">“</div><p>${item.quote}</p><strong>${item.name || 'Testimonio verificado'}</strong>${item.context ? `<span>${item.context}</span>` : ''}</article>`).join('');
+      testimonialRoot.innerHTML = testimonials.map((item) => `<article class="testimonial-card"><div class="testimonial-mark">“</div><p>${item.quote}</p><strong>${item.publication_name || item.name || 'Testimonio verificado'}</strong>${item.service_context ? `<span>${item.service_context}</span>` : ''}</article>`).join('');
     }
   }
 
