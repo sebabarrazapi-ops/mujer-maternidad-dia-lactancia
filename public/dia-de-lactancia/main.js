@@ -113,6 +113,12 @@
     }
   });
 
+  document.querySelectorAll('footer p').forEach((paragraph) => {
+    const text = paragraph.textContent.trim().toLowerCase();
+    const isGenericDisclaimer = text.includes('fines educativos') || text.includes('no reemplaza una evaluación') || text.includes('información entregada no reemplaza');
+    if (isGenericDisclaimer) paragraph.remove();
+  });
+
   document.querySelectorAll('footer').forEach((footer) => {
     if (footer.querySelector('[data-edin-credit]')) return;
     const credit = document.createElement('div');
