@@ -17,6 +17,21 @@
     if (typeof value === 'string') node.textContent = value;
   });
 
+  const quickRoot = document.querySelector('[data-quick-links]');
+  if (quickRoot) {
+    const links = content.quickLinks || [];
+    quickRoot.innerHTML = links.map((item) => {
+      const attrs = item.external ? ' target="_blank" rel="noopener noreferrer"' : '';
+      return `<a class="quick-link" href="${item.url}"${attrs}><span class="quick-link-copy"><small>${item.eyebrow || ''}</small><strong>${item.title}</strong></span><span class="quick-link-arrow" aria-hidden="true">→</span></a>`;
+    }).join('');
+  }
+
+  const freeRoot = document.querySelector('[data-free-resources]');
+  if (freeRoot) {
+    const resources = content.freeResources || [];
+    freeRoot.innerHTML = resources.map((item) => `<article class="card resource-card"><span class="card-tag">${item.type === 'pdf' ? 'LECTURA' : 'RECURSO GRATUITO'}</span><h3>${item.title}</h3><p>${item.description}</p><a class="btn btn-secondary" href="${item.url}" target="_blank" rel="noopener noreferrer">Abrir recurso</a></article>`).join('');
+  }
+
   const productRoot = document.querySelector('[data-digital-products]');
   if (productRoot) {
     const products = content.catalogs?.digitalProducts || [];
@@ -28,6 +43,24 @@
       return `<article class="card product-card"><span class="card-tag">${product.type === 'ebook' ? 'EBOOK' : 'RECURSO DIGITAL'}</span><h3>${product.title}</h3><p>${product.description}</p>${cta}</article>`;
     }).join('');
   }
+
+  const testimonialSection = document.querySelector('[data-testimonials-section]');
+  const testimonialRoot = document.querySelector('[data-testimonials]');
+  if (testimonialSection && testimonialRoot) {
+    const testimonials = content.testimonials || [];
+    if (!testimonials.length) {
+      testimonialSection.hidden = true;
+    } else {
+      testimonialSection.hidden = false;
+      testimonialRoot.innerHTML = testimonials.map((item) => `<article class="testimonial-card"><div class="testimonial-mark">“</div><p>${item.quote}</p><strong>${item.name || 'Testimonio verificado'}</strong>${item.context ? `<span>${item.context}</span>` : ''}</article>`).join('');
+    }
+  }
+
+  document.querySelectorAll('[data-social]').forEach((link) => {
+    const key = link.dataset.social;
+    const url = content.contact?.[key];
+    if (url) link.href = url;
+  });
 
   const pixelId = '1060562626332842';
   if (!window.fbq) {
