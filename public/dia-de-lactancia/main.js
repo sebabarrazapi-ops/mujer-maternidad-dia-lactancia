@@ -1,6 +1,8 @@
 (() => {
   const cfg = window.LANDING_CONFIG || {};
   const products = cfg.products || {};
+  const BRAND_LOGO = '/assets/brand-logo.svg';
+  const BRAND_MARK = '/assets/brand-mark.svg';
 
   const ensureStylesheet = (href, dataKey) => {
     if (!document.querySelector(`link[${dataKey}]`)) {
@@ -15,12 +17,27 @@
   ensureStylesheet('/brand.css', 'data-brand-styles');
   ensureStylesheet('/dia-de-lactancia/phase-a.css', 'data-landing-phase-a-styles');
 
+  let favicon = document.querySelector('link[rel="icon"]');
+  if (!favicon) {
+    favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    document.head.appendChild(favicon);
+  }
+  favicon.type = 'image/svg+xml';
+  favicon.href = BRAND_MARK;
+
   const brandLink = document.querySelector('.site-header .brand');
   if (brandLink) {
     brandLink.href = '/';
     brandLink.classList.add('brand-logo-link');
     brandLink.setAttribute('aria-label', 'Volver al inicio de Mujer y Maternidad');
-    brandLink.innerHTML = '<img class="brand-logo compact" src="/assets/logo-mujer-maternidad.png" alt="Mujer y Maternidad · Verónica Valencia · Matrona" />';
+    brandLink.innerHTML = `<img class="brand-logo compact" src="${BRAND_LOGO}" alt="Mujer y Maternidad · Verónica Valencia · Matrona" />`;
+    const img = brandLink.querySelector('img');
+    if (img) {
+      img.addEventListener('error', () => {
+        brandLink.innerHTML = '<span class="brand-fallback">Mujer y Maternidad</span>';
+      }, { once: true });
+    }
   }
 
   function carryTracking(targetUrl) {
