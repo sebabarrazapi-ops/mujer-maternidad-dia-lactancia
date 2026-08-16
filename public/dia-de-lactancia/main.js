@@ -41,9 +41,12 @@
   }
 
   const testimonialsPlaceholder = document.querySelector('.testimonials-placeholder');
-  if (testimonialsPlaceholder && !testimonialsPlaceholder.id) {
-    testimonialsPlaceholder.id = 'testimonios';
-  }
+  if (testimonialsPlaceholder && !testimonialsPlaceholder.id) testimonialsPlaceholder.id = 'testimonios';
+
+  const testimonialScript = document.createElement('script');
+  testimonialScript.src = '/testimonials.js';
+  testimonialScript.defer = true;
+  document.head.appendChild(testimonialScript);
 
   function carryTracking(targetUrl) {
     try {
@@ -66,17 +69,13 @@
     while (walker.nextNode()) nodes.push(walker.currentNode);
     nodes.forEach((node) => {
       let value = node.nodeValue;
-      replacements.forEach(([from, to]) => {
-        value = value.split(from).join(to);
-      });
+      replacements.forEach(([from, to]) => { value = value.split(from).join(to); });
       node.nodeValue = value;
     });
   }
 
   replaceText(document.body, [
-    ["$59.980", "US$66"],
-    ["$49.990", "US$55"],
-    ["$29.990", "US$33"],
+    ["$59.980", "US$66"], ["$49.990", "US$55"], ["$29.990", "US$33"],
     ["Ahorras $9.990", "Ahorras US$11"],
     ["Verónica Valencia Yáñez", "Verónica Andrea Valencia Yáñez"],
     ["El enlace del Día Completo se habilitará apenas esté disponible en Hotmart.", "También puedes elegir el Día de Lactancia completo por US$55."],
@@ -105,6 +104,22 @@
       link.href = carryTracking(combo.checkout);
       link.target = "_self";
     }
+  });
+
+  document.querySelectorAll('footer').forEach((footer) => {
+    if (footer.querySelector('[data-edin-credit]')) return;
+    const credit = document.createElement('div');
+    credit.setAttribute('data-edin-credit', 'true');
+    credit.textContent = 'Sitio web creado por Servicio de Gestión EDIN';
+    credit.style.maxWidth = '1180px';
+    credit.style.margin = '18px auto 0';
+    credit.style.padding = '14px 24px 0';
+    credit.style.borderTop = '1px solid rgba(255,255,255,.16)';
+    credit.style.fontSize = '.82rem';
+    credit.style.lineHeight = '1.4';
+    credit.style.opacity = '.72';
+    credit.style.textAlign = 'center';
+    footer.appendChild(credit);
   });
 
   if (cfg.metaPixelId) {
