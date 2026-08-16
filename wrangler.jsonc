@@ -1,7 +1,7 @@
 {
-  "name": "mujer-y-maternidad",
+  "name": "mujer-maternidad-dia-lactancia",
   "compatibility_date": "2026-08-16",
   "assets": {
-    "directory": "."
+    "directory": "./public"
   }
 }
