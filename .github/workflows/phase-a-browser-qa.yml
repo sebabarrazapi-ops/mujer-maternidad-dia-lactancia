@@ -34,7 +34,6 @@ jobs:
       - name: Start local preview
         run: |
           python -m http.server 4173 --directory public > /tmp/mym-preview.log 2>&1 &
-          echo $! > /tmp/mym-preview.pid
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
               echo "PREVIEW_READY=YES"
@@ -57,8 +56,7 @@ jobs:
           BASE = "http://127.0.0.1:4173"
           OUT = Path("qa-artifacts")
           OUT.mkdir(exist_ok=True)
-          checks = []
-          failures = []
+          checks, failures = [], []
 
           def check(name, condition, detail=""):
               ok = bool(condition)
@@ -79,29 +77,25 @@ jobs:
 
           with sync_playwright() as p:
               browser = p.chromium.launch(headless=True)
-
-              # Desktop routing and JS smoke test
               context = browser.new_context(viewport={"width": 1440, "height": 1000})
               page = context.new_page()
-              js_errors = []
-              local_failed_requests = []
+              js_errors, local_failed = [], []
               page.on("pageerror", lambda exc: js_errors.append(str(exc)))
-              page.on("requestfailed", lambda req: local_failed_requests.append(f"{req.method} {req.url} :: {req.failure}") if req.url.startswith(BASE) else None)
+              page.on("requestfailed", lambda req: local_failed.append(f"{req.method} {req.url} :: {req.failure}") if req.url.startswith(BASE) else None)
 
               for name, route in routes:
                   response = page.goto(BASE + route, wait_until="domcontentloaded")
-                  page.wait_for_timeout(500)
+                  page.wait_for_timeout(400)
                   check(f"route:{name}:200", response is not None and response.status == 200, f"status={response.status if response else 'NONE'}")
                   overflow = page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth + 2")
                   check(f"route:{name}:no-horizontal-overflow-desktop", not overflow, f"scroll={page.evaluate('document.documentElement.scrollWidth')} client={page.evaluate('document.documentElement.clientWidth')}")
 
-              # Home desktop
               page.goto(BASE + "/", wait_until="domcontentloaded")
-              page.wait_for_timeout(900)
+              page.wait_for_timeout(700)
               check("home:h1", "Acompañamiento e información" in page.locator("h1").inner_text(), page.locator("h1").inner_text())
-              check("home:journey-cards", page.locator("[data-journey-id]").count() >= 6, f"count={page.locator('[data-journey-id]').count()}")
+              check("home:journey-cards", page.locator(".journey-card").count() >= 6, f"count={page.locator('.journey-card').count()}")
               check("home:trust-signals", page.locator(".trust-signal").count() == 4, f"count={page.locator('.trust-signal').count()}")
-              check("home:testimonials-hidden-without-data", page.locator("[data-testimonials-section]").evaluate("el => el.hidden === true"), "hidden expected")
+              check("home:testimonials-hidden", page.locator("[data-testimonials-section]").count() == 1 and page.locator("[data-testimonials-section]").evaluate("el => el.hidden === true"), "hidden expected")
               logo_src = page.locator(".site-header .brand img").get_attribute("src") or ""
               check("home:svg-logo", logo_src.endswith("/assets/brand-logo.svg"), logo_src)
               favicon = page.locator('link[rel="icon"]').get_attribute("href") or ""
@@ -109,14 +103,14 @@ jobs:
               check("home:canonical", page.locator('link[rel="canonical"]').get_attribute("href") == "https://mujerymaternidad.cl/", page.locator('link[rel="canonical"]').get_attribute("href") or "")
               page.screenshot(path=str(OUT / "home-desktop.png"), full_page=True)
 
-              # Día de Lactancia desktop with tracking query propagation
               landing_url = BASE + "/dia-de-lactancia/?utm_source=qa&utm_medium=preview&utm_campaign=phase_a&utm_content=browser&fbclid=QA123"
               page.goto(landing_url, wait_until="domcontentloaded")
-              page.wait_for_timeout(900)
-              check("landing:section-fit", page.get_by_text("Este Día de Lactancia puede ayudarte si…", exact=False).count() == 1, "section present")
-              check("landing:section-how-to-book", page.get_by_text("Así reservas tu lugar", exact=False).count() == 1, "section present")
-              check("landing:next-step", page.get_by_text("Mujer y Maternidad continúa después del taller", exact=False).count() == 1, "section present")
-              check("landing:testimonials-placeholder-hidden", page.locator("#testimonios").evaluate("el => el.hidden === true"), "hidden expected")
+              page.wait_for_timeout(700)
+              check("landing:section-fit", page.locator(".fit-section").count() == 1, "fit-section")
+              check("landing:section-how-to-book", page.locator(".purchase-steps-section").count() == 1, "purchase-steps-section")
+              check("landing:next-step", page.locator(".next-step-section").count() == 1, "next-step-section")
+              test_section = page.locator("#testimonios")
+              check("landing:testimonials-placeholder-hidden", test_section.count() == 1 and test_section.evaluate("el => el.hidden === true"), f"count={test_section.count()}")
               check("landing:canonical", page.locator('link[rel="canonical"]').get_attribute("href") == "https://mujerymaternidad.cl/dia-de-lactancia/", page.locator('link[rel="canonical"]').get_attribute("href") or "")
               landing_logo = page.locator(".site-header .brand img").get_attribute("src") or ""
               check("landing:svg-logo", landing_logo.endswith("/assets/brand-logo.svg"), landing_logo)
@@ -127,8 +121,7 @@ jobs:
                   "combo": "S107178973Y",
               }
               for key, product_id in expected_products.items():
-                  locator = page.locator(f'[data-product="{key}"]').first
-                  href = locator.get_attribute("href") or ""
+                  href = page.locator(f'[data-product="{key}"]').first.get_attribute("href") or ""
                   parsed = urlparse(href)
                   qs = parse_qs(parsed.query)
                   check(f"landing:{key}:hotmart-product", product_id in parsed.path, href)
@@ -138,42 +131,37 @@ jobs:
                   check(f"landing:{key}:fbclid", qs.get("fbclid") == ["QA123"], href)
               page.screenshot(path=str(OUT / "dia-lactancia-desktop.png"), full_page=True)
 
-              # Mobile real-browser QA
               mctx = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=1)
               mpage = mctx.new_page()
-              m_js_errors = []
-              m_local_failed = []
+              m_js_errors, m_local_failed = [], []
               mpage.on("pageerror", lambda exc: m_js_errors.append(str(exc)))
               mpage.on("requestfailed", lambda req: m_local_failed.append(f"{req.method} {req.url} :: {req.failure}") if req.url.startswith(BASE) else None)
 
               mpage.goto(BASE + "/", wait_until="domcontentloaded")
-              mpage.wait_for_timeout(900)
+              mpage.wait_for_timeout(700)
               overflow = mpage.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth + 2")
               check("home:no-horizontal-overflow-mobile", not overflow, f"scroll={mpage.evaluate('document.documentElement.scrollWidth')} client={mpage.evaluate('document.documentElement.clientWidth')}")
               check("home:mobile-menu-visible", mpage.locator("[data-menu-toggle]").is_visible(), "390px viewport")
               mpage.screenshot(path=str(OUT / "home-mobile.png"), full_page=True)
 
               mpage.goto(BASE + "/dia-de-lactancia/", wait_until="domcontentloaded")
-              mpage.wait_for_timeout(900)
+              mpage.wait_for_timeout(700)
               overflow = mpage.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth + 2")
               check("landing:no-horizontal-overflow-mobile", not overflow, f"scroll={mpage.evaluate('document.documentElement.scrollWidth')} client={mpage.evaluate('document.documentElement.clientWidth')}")
               check("landing:primary-combo-visible-mobile", mpage.locator(".hero .combo-link").is_visible(), "390px viewport")
               mpage.screenshot(path=str(OUT / "dia-lactancia-mobile.png"), full_page=True)
 
-              # Source-level privacy/tracking guards
               site_js = Path("public/site.js").read_text(encoding="utf-8")
               landing_js = Path("public/dia-de-lactancia/main.js").read_text(encoding="utf-8")
-              check("privacy:no-JourneySelection", "JourneySelection" not in site_js, "health-stage selection must not be sent to Meta")
-              check("tracking:no-duplicate-InitiateCheckout-in-landing", "InitiateCheckout" not in landing_js, "Hotmart remains checkout event source")
+              check("privacy:no-JourneySelection", "JourneySelection" not in site_js, "health-stage selection not sent to Meta")
+              check("tracking:no-duplicate-InitiateCheckout", "InitiateCheckout" not in landing_js, "Hotmart remains checkout event source")
               check("tracking:landing-page-type-workshop", "page_type:'WORKSHOP'" in landing_js, "normalized taxonomy")
               check("assets:brand-logo-exists", Path("public/assets/brand-logo.svg").exists(), "")
               check("assets:brand-mark-exists", Path("public/assets/brand-mark.svg").exists(), "")
-
               check("browser:no-desktop-js-errors", not js_errors, json.dumps(js_errors, ensure_ascii=False))
               check("browser:no-mobile-js-errors", not m_js_errors, json.dumps(m_js_errors, ensure_ascii=False))
-              check("browser:no-local-failed-requests-desktop", not local_failed_requests, json.dumps(local_failed_requests, ensure_ascii=False))
+              check("browser:no-local-failed-requests-desktop", not local_failed, json.dumps(local_failed, ensure_ascii=False))
               check("browser:no-local-failed-requests-mobile", not m_local_failed, json.dumps(m_local_failed, ensure_ascii=False))
-
               browser.close()
 
           summary = {
@@ -184,16 +172,9 @@ jobs:
               "total": len(checks),
           }
           (OUT / "qa-results.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
-          md = [
-              "# Mujer y Maternidad — Phase A Browser QA",
-              "",
-              f"**Status:** `{summary['status']}`",
-              f"**Checks:** `{summary['passed']}/{summary['total']}`",
-              "",
-          ]
-          for item in checks:
-              md.append(f"- {'PASS' if item['pass'] else 'FAIL'} — `{item['name']}` — {item['detail']}")
-          (OUT / "qa-summary.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+          lines = ["# Mujer y Maternidad — Phase A Browser QA", "", f"**Status:** `{summary['status']}`", f"**Checks:** `{summary['passed']}/{summary['total']}`", ""]
+          lines += [f"- {'PASS' if x['pass'] else 'FAIL'} — `{x['name']}` — {x['detail']}" for x in checks]
+          (OUT / "qa-summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
           print(f"BROWSER_QA_STATUS={summary['status']}")
           print(f"BROWSER_QA_CHECKS={summary['passed']}/{summary['total']}")
           if failures:
@@ -206,7 +187,8 @@ jobs:
         if: always()
         run: |
           if [ -f qa-artifacts/qa-summary.md ]; then cat qa-artifacts/qa-summary.md; fi
-          if [ -f /tmp/mym-preview.log ]; then echo '--- preview log ---'; cat /tmp/mym-preview.log; fi
+          echo '--- preview log ---'
+          cat /tmp/mym-preview.log || true
 
       - name: Upload QA evidence
         if: always()
