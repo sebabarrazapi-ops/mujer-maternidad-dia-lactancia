@@ -9,16 +9,87 @@ window.MYM_CONTENT = {
     instagram: "https://www.instagram.com/mujerymaternidad_cl/",
     facebook: "https://www.facebook.com/mujerymaternidad.cl"
   },
+  analytics: {
+    home: { pageId: "home", pageType: "HOME", pageName: "Mujer y Maternidad" },
+    services: { pageId: "services_index", pageType: "SERVICE_INDEX", pageName: "Servicios" },
+    workshops: { pageId: "workshops_index", pageType: "WORKSHOP_INDEX", pageName: "Talleres" },
+    resources: { pageId: "resources_index", pageType: "RESOURCE_INDEX", pageName: "eBooks y recursos" },
+    about: { pageId: "about_veronica", pageType: "ABOUT", pageName: "Sobre Verónica" },
+    contact: { pageId: "contact", pageType: "CONTACT", pageName: "Contacto" }
+  },
   home: {
     heroEyebrow: "MUJER Y MATERNIDAD",
-    heroTitle: "Información clara para vivir tu maternidad con más confianza",
-    heroLead: "Un espacio creado por Verónica Andrea Valencia Yáñez, Matrona, para acompañarte con educación, orientación y herramientas prácticas en distintas etapas de la maternidad y salud de la mujer.",
+    heroTitle: "Acompañamiento e información para cada etapa de tu maternidad",
+    heroLead: "Un espacio creado por Verónica Andrea Valencia Yáñez, Matrona, para orientarte con información clara, recursos prácticos y distintas formas de acompañamiento según lo que estés viviendo hoy.",
+    journeyEyebrow: "EMPIEZA POR TU MOMENTO ACTUAL",
+    journeyTitle: "¿En qué etapa estás?",
+    journeyLead: "No necesitas conocer el nombre exacto de un servicio. Empieza por la etapa o necesidad que más se parece a lo que estás viviendo y te mostraremos las opciones disponibles.",
+    guidanceEyebrow: "¿NO SABES QUÉ NECESITAS?",
+    guidanceTitle: "Podemos ayudarte a encontrar el punto de partida",
+    guidanceLead: "Si todavía no sabes si necesitas un taller, una consulta o simplemente información, escríbenos y cuéntanos de forma general en qué etapa estás. No envíes antecedentes clínicos sensibles por este canal.",
     quickTitle: "Todo Mujer y Maternidad en un solo lugar",
     quickLead: "Talleres, recursos gratuitos, consulta individual y próximos espacios de acompañamiento.",
     resourcesEyebrow: "RECURSOS Y PRODUCTOS DIGITALES",
     resourcesTitle: "Aprende a tu ritmo con recursos prácticos",
     resourcesLead: "Aquí iremos reuniendo eBooks, guías, descargables y otros productos digitales de Mujer y Maternidad. Solo publicaremos productos con contenido, precio y checkout confirmados."
   },
+  trustSignals: [
+    "Verónica Andrea Valencia Yáñez",
+    "Matrona",
+    "Educación y orientación profesional",
+    "Atención y actividades de Mujer y Maternidad"
+  ],
+  journeyStages: [
+    {
+      id: "embarazo",
+      eyebrow: "EMBARAZO",
+      title: "Quiero prepararme con más información",
+      description: "Recursos y espacios educativos relacionados con preparación para el parto, lactancia y decisiones informadas.",
+      url: "/servicios/",
+      status: "active"
+    },
+    {
+      id: "parto-postparto",
+      eyebrow: "PARTO Y POSTPARTO",
+      title: "Quiero llegar más preparada a esta etapa",
+      description: "Explora acompañamiento y recursos para ordenar información antes y después del nacimiento.",
+      url: "/servicios/",
+      status: "active"
+    },
+    {
+      id: "lactancia",
+      eyebrow: "LACTANCIA",
+      title: "Necesito comprender mejor la lactancia",
+      description: "Encuentra educación en lactancia, el Día de Lactancia y opciones de acompañamiento profesional.",
+      url: "/dia-de-lactancia/",
+      status: "active"
+    },
+    {
+      id: "banco-leche",
+      eyebrow: "BANCO DE LECHE",
+      title: "Quiero organizar extracción y conservación",
+      description: "Contenido práctico sobre extracción, almacenamiento, conservación y preparación para la vuelta al trabajo.",
+      url: "/dia-de-lactancia/#banco",
+      status: "active"
+    },
+    {
+      id: "salud-mujer",
+      eyebrow: "SALUD DE LA MUJER",
+      title: "Busco orientación sobre mi salud y fertilidad",
+      description: "Conoce las áreas de acompañamiento disponibles, incluido el método sintotérmico cuando corresponda.",
+      url: "/servicios/",
+      status: "active"
+    },
+    {
+      id: "no-se",
+      eyebrow: "ORIENTACIÓN",
+      title: "No sé qué necesito todavía",
+      description: "Puedes revisar los servicios o escribir por WhatsApp para identificar un punto de partida sin compartir información clínica sensible.",
+      url: "https://api.whatsapp.com/send/?phone=56964047477&text=Hola%2C%20llego%20desde%20mujerymaternidad.cl%20y%20no%20tengo%20claro%20qu%C3%A9%20servicio%20o%20recurso%20necesito.%20Me%20gustar%C3%ADa%20orientaci%C3%B3n%20general.&type=phone_number&app_absent=0",
+      external: true,
+      status: "active"
+    }
+  ],
   quickLinks: [
     {
       id: "dia-lactancia",
@@ -43,7 +114,7 @@ window.MYM_CONTENT = {
     },
     {
       id: "consulta",
-      title: "Reservar consulta individual",
+      title: "Consultar por acompañamiento individual",
       eyebrow: "WHATSAPP",
       url: "https://api.whatsapp.com/send/?phone=56964047477&text&type=phone_number&app_absent=0",
       external: true

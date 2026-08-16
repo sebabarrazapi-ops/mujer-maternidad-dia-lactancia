@@ -4,13 +4,18 @@
   const BRAND_LOGO = '/assets/brand-logo.svg';
   const BRAND_MARK = '/assets/brand-mark.svg';
 
-  if (!document.querySelector('link[data-brand-styles]')) {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = '/brand.css';
-    link.dataset.brandStyles = 'true';
-    document.head.appendChild(link);
-  }
+  const ensureStylesheet = (href, dataKey) => {
+    if (!document.querySelector(`link[${dataKey}]`)) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      link.setAttribute(dataKey, 'true');
+      document.head.appendChild(link);
+    }
+  };
+
+  ensureStylesheet('/brand.css', 'data-brand-styles');
+  ensureStylesheet('/dia-de-lactancia/phase-a.css', 'data-landing-phase-a-styles');
 
   let favicon = document.querySelector('link[rel="icon"]');
   if (!favicon) {
@@ -33,6 +38,11 @@
         brandLink.innerHTML = '<span class="brand-fallback">Mujer y Maternidad</span>';
       }, { once: true });
     }
+  }
+
+  const testimonialsPlaceholder = document.querySelector('.testimonials-placeholder');
+  if (testimonialsPlaceholder && !testimonialsPlaceholder.id) {
+    testimonialsPlaceholder.id = 'testimonios';
   }
 
   function carryTracking(targetUrl) {
@@ -100,7 +110,7 @@
   if (cfg.metaPixelId) {
     const s = document.createElement("script");
     const pagePath = window.location.pathname;
-    s.text = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${cfg.metaPixelId}');fbq('track','PageView',{page_name:'Día de Lactancia',page_path:'${pagePath}',page_type:'sales_landing'});fbq('track','ViewContent',{content_name:'Día de Lactancia',content_category:'Taller online',content_ids:['dia_lactancia_2026'],content_type:'product',value:55,currency:'USD',page_path:'${pagePath}'});`;
+    s.text = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${cfg.metaPixelId}');fbq('track','PageView',{page_name:'Día de Lactancia',page_path:'${pagePath}',page_type:'WORKSHOP'});fbq('track','ViewContent',{content_name:'Día de Lactancia',content_category:'Taller online',content_ids:['dia_lactancia_2026'],content_type:'product',value:55,currency:'USD',page_path:'${pagePath}'});`;
     document.head.appendChild(s);
   }
 })();
