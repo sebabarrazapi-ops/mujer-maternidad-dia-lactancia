@@ -87,6 +87,48 @@
     trustStrip.insertAdjacentElement('afterend', proof);
   }
 
+  const featuredCard = document.querySelector('#elige .card-featured');
+  if (featuredCard && !featuredCard.querySelector('[data-cro-payment-note]')) {
+    const primaryButton = featuredCard.querySelector('.combo-link');
+    if (primaryButton) {
+      const note = document.createElement('p');
+      note.className = 'cro-payment-note';
+      note.setAttribute('data-cro-payment-note', 'true');
+      note.textContent = 'Compra procesada de forma segura por Hotmart.';
+      primaryButton.insertAdjacentElement('afterend', note);
+    }
+  }
+
+  const nextStepBox = document.querySelector('.next-step-section .next-step-box');
+  if (nextStepBox) {
+    nextStepBox.innerHTML = `
+      <div>
+        <span class="eyebrow">ANTES DE RESERVAR</span>
+        <h2 id="next-step-title">Todo lo importante antes de elegir</h2>
+        <p>La jornada se realiza el 29 de agosto, es online y en vivo, y puedes participar en un solo taller o elegir el Día de Lactancia completo.</p>
+        <div class="cro-closing-facts">
+          <span><strong>US$55</strong>Día completo</span>
+          <span><strong>US$33</strong>Cada taller</span>
+          <span><strong>Grabación</strong>Disponible después</span>
+        </div>
+      </div>
+      <div class="next-step-actions cro-closing-actions">
+        <a class="btn btn-primary combo-link" data-product="combo" href="#">Reservar Día Completo · US$55</a>
+        <a class="btn btn-secondary" href="#elige">Comparar las 3 opciones</a>
+        <small>El pago se completa en el checkout seguro de Hotmart.</small>
+      </div>`;
+  }
+
+  if (!document.querySelector('[data-cro-mobile-sticky]')) {
+    const sticky = document.createElement('div');
+    sticky.className = 'cro-mobile-sticky';
+    sticky.setAttribute('data-cro-mobile-sticky', 'true');
+    sticky.innerHTML = `
+      <div class="cro-mobile-sticky-copy"><small>29 de agosto</small><strong>Día completo · US$55</strong></div>
+      <a class="btn btn-primary combo-link" data-product="combo" href="#">Reservar</a>`;
+    document.body.appendChild(sticky);
+  }
+
   const testimonialsPlaceholder = document.querySelector('.testimonials-placeholder');
   if (testimonialsPlaceholder && !testimonialsPlaceholder.id) testimonialsPlaceholder.id = 'testimonios';
 
@@ -154,7 +196,7 @@
     if (cfg.comboEnabled && combo.checkout) {
       link.classList.remove("is-disabled");
       link.removeAttribute("aria-disabled");
-      link.textContent = "Reservar Día Completo · US$55";
+      if (!link.closest('[data-cro-mobile-sticky]')) link.textContent = "Reservar Día Completo · US$55";
       link.href = carryTracking(combo.checkout);
       link.target = "_self";
     }
