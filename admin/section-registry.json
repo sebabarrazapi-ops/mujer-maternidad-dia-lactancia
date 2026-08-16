@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "pages": {
+    "home": {
+      "label": "Inicio",
+      "sections": [
+        { "id": "hero", "label": "Hero", "enabled": true, "order": 10, "editableText": true, "reorderable": false },
+        { "id": "trust", "label": "Señales de confianza", "enabled": true, "order": 20, "editableText": true, "reorderable": true },
+        { "id": "journey", "label": "¿En qué etapa estás?", "enabled": true, "order": 30, "editableText": true, "reorderable": true },
+        { "id": "guidance", "label": "Orientación general", "enabled": true, "order": 40, "editableText": true, "reorderable": true },
+        { "id": "pillars", "label": "Formas de acompañarte", "enabled": true, "order": 50, "editableText": true, "reorderable": true },
+        { "id": "quickLinks", "label": "Accesos rápidos", "enabled": true, "order": 60, "editableText": true, "reorderable": true },
+        { "id": "areas", "label": "Áreas de acompañamiento", "enabled": true, "order": 70, "editableText": true, "reorderable": true },
+        { "id": "event", "label": "Próximo evento", "enabled": true, "order": 80, "editableText": true, "reorderable": true },
+        { "id": "freeResources", "label": "Recursos gratuitos", "enabled": true, "order": 90, "editableText": true, "reorderable": true },
+        { "id": "digitalProducts", "label": "Productos digitales", "enabled": true, "order": 100, "editableText": true, "reorderable": true },
+        { "id": "testimonials", "label": "Testimonios", "enabled": true, "order": 110, "editableText": false, "reorderable": true },
+        { "id": "about", "label": "Sobre Verónica", "enabled": true, "order": 120, "editableText": true, "reorderable": true },
+        { "id": "contact", "label": "Contacto", "enabled": true, "order": 130, "editableText": true, "reorderable": true }
+      ]
+    },
+    "services": {
+      "label": "Servicios",
+      "sections": [
+        { "id": "hero", "label": "Presentación", "enabled": true, "order": 10, "editableText": true, "reorderable": false },
+        { "id": "categories", "label": "Categorías de servicio", "enabled": true, "order": 20, "editableText": true, "reorderable": false },
+        { "id": "availabilityNote", "label": "Nota de disponibilidad", "enabled": true, "order": 30, "editableText": true, "reorderable": true },
+        { "id": "contact", "label": "Orientación por WhatsApp", "enabled": true, "order": 40, "editableText": true, "reorderable": true }
+      ]
+    },
+    "about": {
+      "label": "Sobre Verónica",
+      "sections": [
+        { "id": "hero", "label": "Presentación", "enabled": true, "order": 10, "editableText": true, "reorderable": false },
+        { "id": "bio", "label": "Biografía", "enabled": true, "order": 20, "editableText": true, "reorderable": true },
+        { "id": "pillars", "label": "Formas de acompañarte", "enabled": true, "order": 30, "editableText": true, "reorderable": true },
+        { "id": "pendingCredentials", "label": "Información profesional pendiente", "enabled": true, "order": 40, "editableText": true, "reorderable": true }
+      ]
+    },
+    "dayOfLactation": {
+      "label": "Día de Lactancia",
+      "protectedCommercialPage": true,
+      "sections": [
+        { "id": "hero", "label": "Hero", "enabled": true, "order": 10, "editableText": true, "reorderable": false },
+        { "id": "trust", "label": "Barra de confianza", "enabled": true, "order": 20, "editableText": true, "reorderable": true },
+        { "id": "fit", "label": "¿Es para ti?", "enabled": true, "order": 30, "editableText": true, "reorderable": true },
+        { "id": "pricing", "label": "Opciones de compra", "enabled": true, "order": 40, "editableText": true, "reorderable": false, "commercialCritical": true },
+        { "id": "purchaseSteps", "label": "Cómo reservar", "enabled": true, "order": 50, "editableText": true, "reorderable": true },
+        { "id": "internationalTimes", "label": "Horarios internacionales", "enabled": true, "order": 60, "editableText": true, "reorderable": true },
+        { "id": "benefits", "label": "Qué incluye", "enabled": true, "order": 70, "editableText": true, "reorderable": true },
+        { "id": "introWorkshop", "label": "Introducción a la Lactancia", "enabled": true, "order": 80, "editableText": true, "reorderable": true },
+        { "id": "milkBankWorkshop", "label": "Banco de Leche Materna", "enabled": true, "order": 90, "editableText": true, "reorderable": true },
+        { "id": "combo", "label": "Día Completo", "enabled": true, "order": 100, "editableText": true, "reorderable": true, "commercialCritical": true },
+        { "id": "testimonials", "label": "Testimonios", "enabled": true, "order": 110, "editableText": false, "reorderable": true },
+        { "id": "nextStep", "label": "Siguiente paso / FAQ", "enabled": true, "order": 120, "editableText": true, "reorderable": true }
+      ]
+    }
+  },
+  "protectedFields": [
+    "metaPixelId",
+    "hotmartProductIds",
+    "hotmartCheckoutUrls",
+    "trackingRules",
+    "utmPropagation",
+    "purchaseEventLogic"
+  ]
+}
