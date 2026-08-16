@@ -16,6 +16,7 @@
 
   ensureStylesheet('/brand.css', 'data-brand-styles');
   ensureStylesheet('/dia-de-lactancia/phase-a.css', 'data-landing-phase-a-styles');
+  ensureStylesheet('/dia-de-lactancia/cro-v2.css', 'data-cro-v2-styles');
 
   let favicon = document.querySelector('link[rel="icon"]');
   if (!favicon) {
@@ -28,9 +29,9 @@
 
   const brandLink = document.querySelector('.site-header .brand');
   if (brandLink) {
-    brandLink.href = '/';
+    brandLink.href = '#inicio';
     brandLink.classList.add('brand-logo-link');
-    brandLink.setAttribute('aria-label', 'Volver al inicio de Mujer y Maternidad');
+    brandLink.setAttribute('aria-label', 'Volver al inicio de Día de Lactancia');
     brandLink.innerHTML = `<img class="brand-logo compact" src="${BRAND_LOGO}" alt="Mujer y Maternidad · Verónica Valencia · Matrona" />`;
     const img = brandLink.querySelector('img');
     if (img) {
@@ -40,6 +41,52 @@
     }
   }
 
+  const headerCta = document.querySelector('.header-cta');
+  if (headerCta) headerCta.textContent = 'Reservar';
+
+  const hero = document.querySelector('.hero');
+  if (hero) {
+    const eyebrow = hero.querySelector('.eyebrow');
+    const title = hero.querySelector('h1');
+    const lead = hero.querySelector('.hero-lead');
+    const subcopy = hero.querySelector('.hero-subcopy');
+    const microcopy = hero.querySelector('.microcopy');
+
+    if (eyebrow) eyebrow.textContent = 'DÍA DE LACTANCIA · 29 DE AGOSTO · ONLINE EN VIVO';
+    if (title) title.textContent = 'Prepárate para la lactancia antes de tener que improvisar';
+    if (lead) lead.textContent = 'Comprende qué observar en los primeros días y aprende a organizar extracción y banco de leche con información clara, práctica y guiada.';
+    if (subcopy) subcopy.innerHTML = 'Una jornada con <strong>dos talleres en vivo</strong>, junto a <strong>Verónica Andrea Valencia Yáñez, Matrona</strong>.';
+    if (microcopy) microcopy.innerHTML = '<strong>Pago seguro a través de Hotmart.</strong> También puedes reservar cada taller por separado por US$33.';
+
+    const heroCopy = hero.querySelector('.hero-copy');
+    if (heroCopy && !heroCopy.querySelector('[data-cro-benefits]')) {
+      const benefits = document.createElement('div');
+      benefits.className = 'cro-hero-benefits';
+      benefits.setAttribute('data-cro-benefits', 'true');
+      benefits.innerHTML = '<span>✓ En vivo</span><span>✓ Grabación disponible</span><span>✓ Espacio de preguntas</span>';
+      const schedule = heroCopy.querySelector('.schedule');
+      if (schedule) heroCopy.insertBefore(benefits, schedule);
+    }
+  }
+
+  const trustStrip = document.querySelector('.trust-strip');
+  if (trustStrip && !document.querySelector('[data-cro-proof-section]')) {
+    const proof = document.createElement('section');
+    proof.className = 'cro-proof-section';
+    proof.setAttribute('data-cro-proof-section', 'true');
+    proof.hidden = true;
+    proof.innerHTML = `
+      <div class="container">
+        <div class="cro-proof-heading">
+          <span class="eyebrow">EXPERIENCIAS REALES</span>
+          <h2>Más claridad y confianza para vivir la lactancia</h2>
+          <p>Experiencias compartidas por personas que ya participaron en espacios de lactancia con Verónica.</p>
+        </div>
+        <div class="cro-proof-grid" data-cro-proof-root></div>
+      </div>`;
+    trustStrip.insertAdjacentElement('afterend', proof);
+  }
+
   const testimonialsPlaceholder = document.querySelector('.testimonials-placeholder');
   if (testimonialsPlaceholder && !testimonialsPlaceholder.id) testimonialsPlaceholder.id = 'testimonios';
 
@@ -47,7 +94,7 @@
   testimonialScript.src = '/testimonials.js';
   testimonialScript.defer = true;
   testimonialScript.addEventListener('load', () => {
-    const authorizedTestimonials = (window.MYM_TESTIMONIALS || []).filter((item) => item.authorization_confirmed === true);
+    const authorizedTestimonials = (window.MYM_TESTIMONIALS || []).filter((item) => item.authorization_confirmed === true && item.publication_ready !== false);
     if (!authorizedTestimonials.length && testimonialsPlaceholder) {
       testimonialsPlaceholder.hidden = true;
       testimonialsPlaceholder.setAttribute('aria-hidden', 'true');
