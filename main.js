@@ -17,15 +17,29 @@
     }
   }
 
-  function trackCheckoutClick(productKey) {
-    if (typeof window.fbq === "function") {
-      window.fbq("track", "InitiateCheckout", {
-        content_name: products[productKey]?.name || productKey,
-        currency: cfg.currency || "CLP",
-        value: products[productKey]?.price || 0
+  function replaceText(root, replacements) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach((node) => {
+      let value = node.nodeValue;
+      replacements.forEach(([from, to]) => {
+        value = value.split(from).join(to);
       });
-    }
+      node.nodeValue = value;
+    });
   }
+
+  replaceText(document.body, [
+    ["$59.980", "US$66"],
+    ["$49.990", "US$55"],
+    ["$29.990", "US$33"],
+    ["Ahorras $9.990", "Ahorras US$11"],
+    ["Verónica Valencia Yáñez", "Verónica Andrea Valencia Yáñez"],
+    ["El enlace del Día Completo se habilitará apenas esté disponible en Hotmart.", "También puedes elegir el Día de Lactancia completo por US$55."],
+    ["Combo disponible próximamente", "Reservar Día Completo · US$55"],
+    ["Enlace del combo pendiente", "Reservar Día Completo · US$55"]
+  ]);
 
   document.querySelectorAll(".checkout-link").forEach((link) => {
     const key = link.dataset.product;
@@ -37,7 +51,6 @@
     }
     link.href = carryTracking(checkout);
     link.target = "_self";
-    link.addEventListener("click", () => trackCheckoutClick(key));
   });
 
   const combo = products.combo || {};
@@ -45,9 +58,9 @@
     if (cfg.comboEnabled && combo.checkout) {
       link.classList.remove("is-disabled");
       link.removeAttribute("aria-disabled");
-      link.textContent = "Reservar Día Completo · $49.990";
+      link.textContent = "Reservar Día Completo · US$55";
       link.href = carryTracking(combo.checkout);
-      link.addEventListener("click", () => trackCheckoutClick("combo"));
+      link.target = "_self";
     }
   });
 
