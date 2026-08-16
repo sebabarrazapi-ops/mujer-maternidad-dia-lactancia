@@ -99,6 +99,65 @@
     }
   }
 
+  const purchaseSteps = document.querySelector('.purchase-steps-section');
+  if (purchaseSteps) {
+    const heading = purchaseSteps.querySelector('.section-heading');
+    const steps = purchaseSteps.querySelector('.steps-grid');
+    if (heading) {
+      heading.innerHTML = `
+        <span class="eyebrow">RESERVA SIN COMPLICACIONES</span>
+        <h2 id="purchase-steps-title">De la elección a tu inscripción</h2>
+        <p>El proceso de compra se completa en Hotmart y queda separado de la navegación del sitio.</p>`;
+    }
+    if (steps) {
+      steps.innerHTML = `
+        <article class="step-card"><span>1</span><strong>Elige cómo participar</strong><p>Reserva Introducción, Banco de Leche o el Día de Lactancia completo.</p></article>
+        <article class="step-card"><span>2</span><strong>Paga de forma segura</strong><p>El botón de tu opción abre el checkout de Hotmart para completar la compra.</p></article>
+        <article class="step-card"><span>3</span><strong>Conserva tu confirmación</strong><p>Guarda la confirmación de compra y revisa las indicaciones asociadas a tu inscripción y acceso al evento.</p></article>`;
+    }
+  }
+
+  const introSection = document.querySelector('#introduccion');
+  if (introSection && !document.querySelector('[data-cro-outcomes]')) {
+    const outcomes = document.createElement('section');
+    outcomes.className = 'section cro-outcomes-section';
+    outcomes.setAttribute('data-cro-outcomes', 'true');
+    outcomes.innerHTML = `
+      <div class="container">
+        <div class="section-heading centered">
+          <span class="eyebrow">LO QUE VAS A TRABAJAR</span>
+          <h2>Una jornada para ordenar lo esencial y llevarlo a la práctica</h2>
+          <p>Los dos talleres se complementan: primero comprendes bases de lactancia y luego aprendes a organizar extracción, conservación y banco de leche.</p>
+        </div>
+        <div class="cro-outcomes-grid">
+          <article><strong>Comprender la producción y el agarre</strong><span>Qué observar y cómo interpretar situaciones frecuentes.</span></article>
+          <article><strong>Ordenar mitos, dudas y crisis</strong><span>Información clara para reconocer conceptos importantes.</span></article>
+          <article><strong>Organizar extracción y conservación</strong><span>Recipientes, rotulado, tiempos y temperaturas.</span></article>
+          <article><strong>Planificar tu banco de leche</strong><span>Un sistema práctico pensando también en la vuelta al trabajo.</span></article>
+        </div>
+      </div>`;
+    introSection.insertAdjacentElement('beforebegin', outcomes);
+  }
+
+  const profile = document.querySelector('.section-profile');
+  if (profile) {
+    const copy = profile.querySelector('.profile-grid > div:last-child');
+    if (copy) {
+      copy.innerHTML = `
+        <span class="eyebrow">QUIÉN TE ACOMPAÑA</span>
+        <h2>Verónica Andrea Valencia Yáñez</h2>
+        <p class="role">Matrona · Mujer y Maternidad</p>
+        <p><strong>Soy Vero, matrona de profesión y vocación.</strong> Mi propósito es acompañar a las mujeres a través de la educación, el bienestar y espacios seguros donde puedan comprender sus procesos con mayor confianza.</p>
+        <p>A lo largo de mi camino he complementado mi experiencia clínica con formación en salud hormonal femenina y bienestar integral. En mis talleres busco transformar información que puede sentirse abrumadora en herramientas claras, prácticas y aplicables.</p>
+        <p>Preparé este Día de Lactancia para que puedas ordenar dudas frecuentes, comprender mejor el proceso y llegar con más herramientas a las decisiones del día a día.</p>
+        <div class="cro-authority-points">
+          <span>Matrona</span>
+          <span>Educación y herramientas prácticas</span>
+          <span>Acompañamiento cercano y sin juicios</span>
+        </div>`;
+    }
+  }
+
   const nextStepBox = document.querySelector('.next-step-section .next-step-box');
   if (nextStepBox) {
     nextStepBox.innerHTML = `
@@ -117,6 +176,39 @@
         <a class="btn btn-secondary" href="#elige">Comparar las 3 opciones</a>
         <small>El pago se completa en el checkout seguro de Hotmart.</small>
       </div>`;
+  }
+
+  const faq = document.querySelector('.faq-section .container');
+  if (faq) {
+    faq.innerHTML = `
+      <div class="section-heading centered">
+        <span class="eyebrow">PREGUNTAS FRECUENTES</span>
+        <h2>Resuelve tus dudas antes de reservar</h2>
+        <p>Lo esencial sobre formato, compra, grabación y formas de participar.</p>
+      </div>
+      <details><summary>¿Puedo comprar solamente uno de los talleres?</summary><p>Sí. Introducción a la Lactancia y Banco de Leche Materna pueden reservarse individualmente por US$33 cada uno.</p></details>
+      <details><summary>¿Qué ventaja tiene elegir el Día de Lactancia completo?</summary><p>Incluye los dos talleres de la jornada por US$55. Comprados por separado suman US$66, por lo que el día completo tiene un ahorro de US$11.</p></details>
+      <details><summary>¿El evento es online y en vivo?</summary><p>Sí. Introducción a la Lactancia se realiza de 10:00 a 12:00 hrs Chile y Banco de Leche Materna de 16:00 a 18:00 hrs Chile.</p></details>
+      <details><summary>¿Qué pasa si después quiero volver a revisar el contenido?</summary><p>La inscripción contempla acceso posterior a la grabación de los talleres.</p></details>
+      <details><summary>¿Puedo hacer preguntas durante el taller?</summary><p>Sí. La jornada contempla un espacio de preguntas y respuestas en directo.</p></details>
+      <details><summary>¿Cómo se realiza el pago?</summary><p>La compra se completa a través del checkout seguro de Hotmart. Allí verás las opciones de pago disponibles para tu ubicación.</p></details>
+      <details><summary>¿Puedo comprar desde fuera de Chile?</summary><p>Sí. La página incluye horarios de referencia para Argentina, Colombia y Ciudad de México, y los precios se muestran en USD.</p></details>
+      <details><summary>¿Qué debo hacer después de comprar?</summary><p>Conserva la confirmación de Hotmart y revisa las indicaciones asociadas a tu inscripción y acceso al evento.</p></details>`;
+  }
+
+  const finalCta = document.querySelector('.final-cta-inner');
+  if (finalCta) {
+    finalCta.innerHTML = `
+      <span class="eyebrow light">29 DE AGOSTO · ONLINE EN VIVO</span>
+      <h2>Llega a la lactancia con más información y menos improvisación</h2>
+      <p>Elige la jornada completa o reserva únicamente el taller que necesitas.</p>
+      <div class="final-offer">Día Completo · <strong>US$55</strong> · Ahorras US$11</div>
+      <div class="final-actions">
+        <a class="btn btn-light combo-link" data-product="combo" href="#">Reservar Día Completo · US$55</a>
+        <a class="btn btn-outline-light checkout-link" data-product="introduction" href="#">Introducción · US$33</a>
+        <a class="btn btn-outline-light checkout-link" data-product="milkBank" href="#">Banco de Leche · US$33</a>
+      </div>
+      <p class="cro-final-trust">Compra procesada de forma segura por Hotmart.</p>`;
   }
 
   if (!document.querySelector('[data-cro-mobile-sticky]')) {
