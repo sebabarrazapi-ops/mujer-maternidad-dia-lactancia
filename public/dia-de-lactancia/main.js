@@ -2,6 +2,12 @@
   const cfg = window.LANDING_CONFIG || {};
   const products = cfg.products || {};
 
+  const brandLink = document.querySelector('.site-header .brand');
+  if (brandLink) {
+    brandLink.href = '/';
+    brandLink.setAttribute('aria-label', 'Volver al inicio de Mujer y Maternidad');
+  }
+
   function carryTracking(targetUrl) {
     try {
       const target = new URL(targetUrl);
