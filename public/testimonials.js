@@ -23,3 +23,55 @@ window.MYM_TESTIMONIALS = [
     related_pages: ["home", "dia-de-lactancia"]
   }
 ];
+
+(() => {
+  const render = () => {
+    const testimonials = (window.MYM_TESTIMONIALS || []).filter((item) => item.authorization_confirmed === true);
+    if (!testimonials.length) return;
+
+    const cardHtml = (item) => `
+      <article class="testimonial-card">
+        <div class="testimonial-mark">“</div>
+        ${item.rating ? `<div class="testimonial-rating" aria-label="${item.rating} de 5 estrellas">${'★'.repeat(item.rating)}</div>` : ''}
+        <p>${item.quote}</p>
+        <strong>${item.publication_name}</strong>
+        <span>${item.service_context}</span>
+        ${item.rating_label ? `<small>${item.rating_label}</small>` : ''}
+      </article>`;
+
+    const homeSection = document.querySelector('[data-testimonials-section]');
+    const homeRoot = document.querySelector('[data-testimonials]');
+    if (homeSection && homeRoot) {
+      const homeTestimonials = testimonials.filter((item) => item.related_pages?.includes('home'));
+      if (homeTestimonials.length) {
+        homeRoot.innerHTML = homeTestimonials.map(cardHtml).join('');
+        homeSection.hidden = false;
+      }
+    }
+
+    const landingSection = document.querySelector('.testimonials-placeholder');
+    if (landingSection) {
+      const landingTestimonials = testimonials.filter((item) => item.related_pages?.includes('dia-de-lactancia'));
+      if (landingTestimonials.length) {
+        landingSection.hidden = false;
+        landingSection.removeAttribute('aria-hidden');
+        landingSection.classList.add('testimonials-section');
+        landingSection.innerHTML = `
+          <div class="container">
+            <div class="section-heading centered">
+              <span class="eyebrow">EXPERIENCIAS REALES</span>
+              <h2>Lo que cuentan quienes han trabajado con Verónica</h2>
+              <p>Experiencias individuales publicadas con autorización. Cada experiencia es personal y no garantiza resultados específicos.</p>
+            </div>
+            <div class="testimonial-grid">${landingTestimonials.map(cardHtml).join('')}</div>
+          </div>`;
+      }
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', render, { once: true });
+  } else {
+    render();
+  }
+})();
