@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Mujer y Maternidad</title>
+  <desc id="desc">Símbolo de maternidad con madre, bebé y arco lila.</desc>
+  <path d="M73 13c28 4 44 23 44 51s-16 47-44 51" fill="none" stroke="#c8a8df" stroke-width="7" stroke-linecap="round"/>
+  <path d="M65 31c9 4 18 12 23 23 4 10 4 22 0 32-3 8-9 14-17 18" fill="none" stroke="#4c4a4a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M62 33c-2 11-7 17-13 24-5 6-8 11-8 17 0 8 6 13 13 13 7 0 11-4 12-10 2-8-1-13-7-16-4-2-8-2-12 0" fill="none" stroke="#4c4a4a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M54 83c-8 4-13 10-13 16 0 7 7 11 15 11 10 0 18-6 19-15" fill="none" stroke="#4c4a4a" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M69 53c4 5 8 9 14 12" fill="none" stroke="#4c4a4a" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M84 61c3-4 8-4 10 0 2-4 7-4 9 0 3 7-9 14-9 14s-12-7-10-14z" fill="#4c4a4a"/>
+</svg>
