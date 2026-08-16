@@ -4,9 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mujer y Maternidad | Verónica Andrea Valencia Yáñez, Matrona</title>
-  <meta name="description" content="Mujer y Maternidad: acompañamiento e información en embarazo, postparto, lactancia, talleres y salud de la mujer con Verónica Andrea Valencia Yáñez, Matrona." />
+  <meta name="description" content="Mujer y Maternidad: acompañamiento e información en embarazo, postparto, lactancia, talleres, recursos y salud de la mujer con Verónica Andrea Valencia Yáñez, Matrona." />
   <meta property="og:title" content="Mujer y Maternidad" />
-  <meta property="og:description" content="Información y acompañamiento profesional para distintas etapas de la maternidad y salud de la mujer." />
+  <meta property="og:description" content="Información, talleres, recursos y acompañamiento profesional para distintas etapas de la maternidad y salud de la mujer." />
   <meta property="og:type" content="website" />
   <meta name="theme-color" content="#b86b63" />
   <link rel="stylesheet" href="/site.css" />
@@ -35,8 +35,8 @@
         <h1 data-content="home.heroTitle">Información clara para vivir tu maternidad con más confianza</h1>
         <p class="hero-lead" data-content="home.heroLead">Un espacio creado por Verónica Andrea Valencia Yáñez, Matrona, para acompañarte con educación, orientación y herramientas prácticas en distintas etapas de la maternidad y salud de la mujer.</p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="/servicios/">Conocer servicios</a>
-          <a class="btn btn-secondary" href="/talleres/">Ver talleres</a>
+          <a class="btn btn-primary" href="/dia-de-lactancia/">Ver Día de Lactancia</a>
+          <a class="btn btn-secondary" data-social="whatsapp" href="#" target="_blank" rel="noopener noreferrer">Hablar por WhatsApp</a>
         </div>
       </div>
       <div class="portrait-card">
@@ -46,12 +46,28 @@
     </div>
   </section>
 
+  <section class="section hub-section">
+    <div class="container narrow">
+      <div class="section-heading center">
+        <span class="eyebrow">ACCESOS RÁPIDOS</span>
+        <h2 data-content="home.quickTitle">Todo Mujer y Maternidad en un solo lugar</h2>
+        <p data-content="home.quickLead">Talleres, recursos gratuitos, consulta individual y próximos espacios de acompañamiento.</p>
+      </div>
+      <div class="quick-links" data-quick-links></div>
+      <div class="social-row" aria-label="Redes sociales de Mujer y Maternidad">
+        <a data-social="instagram" href="#" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a data-social="facebook" href="#" target="_blank" rel="noopener noreferrer">Facebook</a>
+        <a data-social="whatsapp" href="#" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+      </div>
+    </div>
+  </section>
+
   <section class="section" id="areas">
     <div class="container">
       <div class="section-heading center">
         <span class="eyebrow">ÁREAS DE ACOMPAÑAMIENTO</span>
         <h2>Encuentra el apoyo que necesitas en tu etapa actual</h2>
-        <p>La web se irá ampliando con servicios, talleres y recursos específicos. Estas son las principales áreas que estamos organizando.</p>
+        <p>Servicios profesionales, talleres y contenidos educativos organizados en un mismo sitio.</p>
       </div>
       <div class="grid service-grid">
         <article class="card"><span class="card-tag">LACTANCIA</span><h3>Asesoría y educación en lactancia</h3><p>Información y orientación para comprender el proceso, anticipar dudas frecuentes y contar con apoyo profesional cuando lo necesites.</p><a class="link-arrow" href="/servicios/">Conocer opciones →</a></article>
@@ -76,7 +92,18 @@
     </div>
   </section>
 
-  <section class="section" id="recursos">
+  <section class="section">
+    <div class="container">
+      <div class="section-heading center">
+        <span class="eyebrow">RECURSOS GRATUITOS</span>
+        <h2>Material para guardar y consultar</h2>
+        <p>Recursos compartidos por Mujer y Maternidad para complementar la información disponible en la web.</p>
+      </div>
+      <div class="grid service-grid" data-free-resources></div>
+    </div>
+  </section>
+
+  <section class="section section-soft" id="recursos">
     <div class="container">
       <div class="section-heading center">
         <span class="eyebrow" data-content="home.resourcesEyebrow">RECURSOS Y PRODUCTOS DIGITALES</span>
@@ -88,7 +115,18 @@
     </div>
   </section>
 
-  <section class="section section-soft">
+  <section class="section testimonials-section" data-testimonials-section hidden>
+    <div class="container">
+      <div class="section-heading center">
+        <span class="eyebrow">EXPERIENCIAS REALES</span>
+        <h2>Lo que cuentan quienes han trabajado con Verónica</h2>
+        <p>Esta sección solo se mostrará cuando existan testimonios reales y autorizados para publicación.</p>
+      </div>
+      <div class="testimonial-grid" data-testimonials></div>
+    </div>
+  </section>
+
+  <section class="section">
     <div class="container split">
       <img class="profile-photo" src="https://hotmart.s3.amazonaws.com/profile_pictures/819f171f-e2e6-4ca8-93f9-af13ea2b0420/CopiadeIMG_9657.jpeg" alt="Verónica Andrea Valencia Yáñez" />
       <div>
@@ -102,12 +140,15 @@
     </div>
   </section>
 
-  <section class="section">
+  <section class="section contact-band">
     <div class="container narrow" style="text-align:center">
-      <span class="eyebrow">EMPECEMOS POR LO QUE NECESITAS</span>
-      <h2>Servicios, talleres y recursos en un solo lugar</h2>
-      <p class="lead">Esta web será el punto central de Mujer y Maternidad para consultar servicios, próximas actividades, productos digitales y páginas de inscripción.</p>
-      <div class="actions" style="justify-content:center"><a class="btn btn-primary" href="/servicios/">Ver servicios</a><a class="btn btn-secondary" href="/recursos/">Ver eBooks y recursos</a></div>
+      <span class="eyebrow">CONTACTO</span>
+      <h2>¿Necesitas orientación o quieres consultar una actividad?</h2>
+      <p class="lead">Puedes escribir directamente por WhatsApp o revisar las redes oficiales de Mujer y Maternidad.</p>
+      <div class="actions" style="justify-content:center">
+        <a class="btn btn-primary" data-social="whatsapp" href="#" target="_blank" rel="noopener noreferrer">Escribir por WhatsApp</a>
+        <a class="btn btn-secondary" data-social="instagram" href="#" target="_blank" rel="noopener noreferrer">Ver Instagram</a>
+      </div>
     </div>
   </section>
 </main>
