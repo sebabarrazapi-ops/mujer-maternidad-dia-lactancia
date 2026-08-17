@@ -6,6 +6,7 @@
     salvia: { bg:'#fbfcf9', surface:'#fff', soft:'#f0f3ed', sage:'#e5eee7', text:'#29302c', muted:'#626d66', brand:'#718b79', brandDark:'#4f6556', line:'#dbe4dc' },
     ciruela: { bg:'#fffafb', surface:'#fff', soft:'#f4ecef', sage:'#eef1ed', text:'#30282d', muted:'#6e6167', brand:'#8c6174', brandDark:'#654453', line:'#e4d8dd' }
   };
+  const PREVIEW_KEY = 'mym-editorial-preview-v1';
 
   const pageKey = location.pathname.startsWith('/dia-de-lactancia') ? 'day' : (location.pathname === '/' ? 'home' : null);
   if (!pageKey) return;
@@ -92,8 +93,29 @@
   });
 
   const preview = new URLSearchParams(location.search).get('editorial_preview') === '1';
+  if (preview) {
+    try {
+      const snapshot = JSON.parse(sessionStorage.getItem(PREVIEW_KEY) || 'null');
+      if (snapshot?.pages) apply(snapshot);
+    } catch {}
+  }
+
   fetch(`/api/content${preview ? '?preview=1' : ''}`, { credentials:'same-origin', cache:'no-store' })
     .then((r) => r.ok ? r.json() : null)
-    .then(apply)
-    .catch(() => {});
+    .then((serverConfig) => {
+      if (serverConfig?.pages) apply(serverConfig);
+      else if (preview) {
+        try {
+          const snapshot = JSON.parse(sessionStorage.getItem(PREVIEW_KEY) || 'null');
+          if (snapshot?.pages) apply(snapshot);
+        } catch {}
+      }
+    })
+    .catch(() => {
+      if (!preview) return;
+      try {
+        const snapshot = JSON.parse(sessionStorage.getItem(PREVIEW_KEY) || 'null');
+        if (snapshot?.pages) apply(snapshot);
+      } catch {}
+    });
 })();
