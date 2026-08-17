@@ -67,16 +67,28 @@ jobs:
           const s=JSON.parse(fs.readFileSync('/tmp/state.json','utf8'));
           s.draft.theme='salvia';
           s.draft.pages.home.texts.heroTitle='Título de prueba editorial';
+          s.draft.pages.home.texts.heroLead='Soy Verónica Valencia Yáñez, Matrona. Texto de prueba sin segundo nombre.';
           fs.writeFileSync('/tmp/draft.json',JSON.stringify(s.draft));
           NODE
           curl -fsS -b /tmp/cookies -X PUT -H 'content-type: application/json' --data-binary @/tmp/draft.json $BASE/api/admin/draft > /tmp/save1.json
           assert_file_contains /tmp/save1.json '"ok":true'
           curl -fsS -b /tmp/cookies "$BASE/api/content?preview=1" > /tmp/preview1.json
           assert_file_contains /tmp/preview1.json 'Título de prueba editorial'
+          assert_file_contains /tmp/preview1.json 'Soy Verónica Valencia Yáñez'
+
+          echo "QA_STEP=preview-html-bootstrap"
+          UNAUTH_PREVIEW=$(curl -s -o /tmp/unauth-preview.txt -w '%{http_code}' "$BASE/?editorial_preview=1")
+          test "$UNAUTH_PREVIEW" = "401"
+          curl -fsS -b /tmp/cookies "$BASE/?editorial_preview=1" > /tmp/preview-page.html
+          assert_file_contains /tmp/preview-page.html 'window.__MYM_EDITORIAL_PREVIEW_CONFIG='
+          assert_file_contains /tmp/preview-page.html 'Soy Verónica Valencia Yáñez'
+          assert_file_contains /tmp/preview-page.html '/editorial-client.js'
+
           curl -fsS -b /tmp/cookies -X POST $BASE/api/admin/publish > /tmp/publish1.json
           assert_file_contains /tmp/publish1.json '"ok":true'
           curl -fsS $BASE/api/content > /tmp/public1.json
           assert_file_contains /tmp/public1.json 'Título de prueba editorial'
+          assert_file_contains /tmp/public1.json 'Soy Verónica Valencia Yáñez'
           assert_file_contains /tmp/public1.json '"theme":"salvia"'
 
           echo "QA_STEP=publish-v2"
