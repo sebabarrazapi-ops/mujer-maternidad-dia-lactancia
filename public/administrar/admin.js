@@ -21,6 +21,7 @@
     }
   };
   const paletteMeta = {coral:['Coral','#b86b63'],terracota:['Terracota','#a95f50'],rosa:['Rosa','#b96f7d'],salvia:['Salvia','#718b79'],ciruela:['Ciruela','#8c6174']};
+  const PREVIEW_KEY = 'mym-editorial-preview-v1';
 
   const api = async (url, options={}) => {
     const r = await fetch(url,{credentials:'same-origin',headers:{'content-type':'application/json',...(options.headers||{})},...options});
@@ -30,12 +31,26 @@
   };
   const msg = (text, error=false) => { status.textContent=text; status.classList.toggle('error',error); };
   const previewUrl = () => `${schema[pageSelect.value].path}?editorial_preview=1&v=${Date.now()}`;
-  const refreshFrame = () => { frame.src = previewUrl(); };
+  const rememberPreview = () => {
+    if (!state?.draft) return;
+    try { sessionStorage.setItem(PREVIEW_KEY, JSON.stringify(state.draft)); } catch {}
+  };
+  const refreshFrame = () => { rememberPreview(); frame.src = previewUrl(); };
   const syncLivePreview = () => {
     if (!state?.draft || !frame.contentWindow) return;
+    rememberPreview();
     frame.contentWindow.postMessage({type:'mym-editorial-preview',config:state.draft}, location.origin);
   };
-  frame.addEventListener('load', () => setTimeout(syncLivePreview, 40));
+  const sameConfig = (a,b) => JSON.stringify(a) === JSON.stringify(b);
+  const saveAndVerifyDraft = async () => {
+    const r = await api('/api/admin/draft',{method:'PUT',body:JSON.stringify(state.draft)});
+    state.draft = r.draft;
+    const persisted = await api('/api/content?preview=1');
+    if (!sameConfig(persisted,state.draft)) throw new Error('El borrador se guardó, pero la verificación del servidor no coincide. No publiques todavía.');
+    rememberPreview();
+    return persisted;
+  };
+  frame.addEventListener('load', () => setTimeout(syncLivePreview, 60));
 
   const renderPalettes = () => {
     palettesRoot.innerHTML='';
@@ -77,7 +92,7 @@
   };
   const render = () => { renderPalettes(); renderFields(); renderSections(); refreshFrame(); };
   const load = async () => {
-    try { state=await api('/api/admin/state'); login.hidden=true; app.hidden=false; render(); }
+    try { state=await api('/api/admin/state'); login.hidden=true; app.hidden=false; rememberPreview(); render(); }
     catch(e){ login.hidden=false; app.hidden=true; }
   };
 
@@ -94,20 +109,22 @@
     catch(err){ loginStatus.textContent=err.message; loginStatus.classList.add('error'); }
   });
   pageSelect.onchange=render;
-  $('[data-save]').onclick=async()=>{try{msg('Guardando borrador…');const r=await api('/api/admin/draft',{method:'PUT',body:JSON.stringify(state.draft)});state.draft=r.draft;msg('Borrador guardado.');syncLivePreview();}catch(e){msg(e.message,true)}};
+  $('[data-save]').onclick=async()=>{try{msg('Guardando y verificando borrador…');await saveAndVerifyDraft();msg('Borrador guardado y verificado.');syncLivePreview();}catch(e){msg(e.message,true)}};
   $('[data-preview]').onclick=async()=>{
     const popup=window.open('about:blank','_blank');
     try{
       msg('Preparando vista previa…');
-      const r=await api('/api/admin/draft',{method:'PUT',body:JSON.stringify(state.draft)});
-      state.draft=r.draft;
-      msg('Borrador guardado.');
-      if(popup) popup.location.href=previewUrl();
+      await saveAndVerifyDraft();
+      if (popup) {
+        try { popup.sessionStorage.setItem(PREVIEW_KEY, JSON.stringify(state.draft)); } catch {}
+        popup.location.href=previewUrl();
+      }
+      msg('Borrador guardado y verificado.');
     }catch(e){if(popup)popup.close();msg(e.message,true)}
   };
-  $('[data-publish]').onclick=async()=>{if(!confirm('¿Publicar estos cambios en el sitio?'))return;try{msg('Publicando…');await api('/api/admin/draft',{method:'PUT',body:JSON.stringify(state.draft)});const r=await api('/api/admin/publish',{method:'POST'});state.published=r.published;state.draft=structuredClone(r.published);msg('Cambios publicados.');syncLivePreview();}catch(e){msg(e.message,true)}};
-  $('[data-rollback]').onclick=async()=>{if(!confirm('¿Volver a la versión publicada anterior?'))return;try{msg('Restaurando…');const r=await api('/api/admin/rollback',{method:'POST'});state.published=r.published;state.draft=structuredClone(r.published);msg('Versión anterior restaurada.');render();}catch(e){msg(e.message,true)}};
-  $('[data-logout]').onclick=async()=>{await api('/api/admin/logout',{method:'POST'}).catch(()=>{});location.reload();};
+  $('[data-publish]').onclick=async()=>{if(!confirm('¿Publicar estos cambios en el sitio?'))return;try{msg('Publicando…');await saveAndVerifyDraft();const r=await api('/api/admin/publish',{method:'POST'});state.published=r.published;state.draft=structuredClone(r.published);const visible=await api('/api/content');if(!sameConfig(visible,state.published))throw new Error('La publicación se guardó, pero la verificación pública no coincide todavía. No hagas más cambios hasta reintentar.');rememberPreview();msg('Cambios publicados y verificados.');syncLivePreview();}catch(e){msg(e.message,true)}};
+  $('[data-rollback]').onclick=async()=>{if(!confirm('¿Volver a la versión publicada anterior?'))return;try{msg('Restaurando…');const r=await api('/api/admin/rollback',{method:'POST'});state.published=r.published;state.draft=structuredClone(r.published);rememberPreview();msg('Versión anterior restaurada.');render();}catch(e){msg(e.message,true)}};
+  $('[data-logout]').onclick=async()=>{try{sessionStorage.removeItem(PREVIEW_KEY);}catch{}await api('/api/admin/logout',{method:'POST'}).catch(()=>{});location.reload();};
 
   load();
 })();
