@@ -73,8 +73,15 @@
   };
 
   $('[data-login-form]').addEventListener('submit',async(e)=>{
-    e.preventDefault(); loginStatus.textContent='Entrando…'; loginStatus.classList.remove('error');
-    try { await api('/api/admin/login',{method:'POST',body:JSON.stringify({password:new FormData(e.currentTarget).get('password')})}); e.currentTarget.reset(); await load(); }
+    e.preventDefault();
+    const form = e.currentTarget;
+    loginStatus.textContent='Entrando…'; loginStatus.classList.remove('error');
+    try {
+      const password = new FormData(form).get('password');
+      await api('/api/admin/login',{method:'POST',body:JSON.stringify({password})});
+      form.reset();
+      await load();
+    }
     catch(err){ loginStatus.textContent=err.message; loginStatus.classList.add('error'); }
   });
   pageSelect.onchange=render;
