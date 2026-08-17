@@ -12,7 +12,7 @@
     <section class="login card" data-login>
       <div class="brand">Mujer y Maternidad</div>
       <h1>Administrar sitio</h1>
-      <p>Edita textos, colores y visibilidad sin tocar el código ni la configuración de Meta/Hotmart.</p>
+      <p>Edita contenido, imágenes, testimonios y páginas sin tocar el código ni la configuración de Meta/Hotmart.</p>
       <form data-login-form>
         <label>Clave de administración<input type="password" name="password" autocomplete="current-password" required /></label>
         <button type="submit">Entrar</button>
@@ -22,30 +22,55 @@
 
     <section class="app" data-app hidden>
       <header class="topbar">
-        <div><strong>Mujer y Maternidad</strong><span>Administrador MVP v1</span></div>
+        <div><strong>Mujer y Maternidad</strong><span>EDIN Site Studio · MVP 2</span></div>
         <div class="top-actions"><button class="ghost" data-preview>Vista previa</button><button class="ghost" data-logout>Salir</button></div>
       </header>
 
       <div class="workspace">
         <aside class="panel controls">
           <label>Página
-            <select data-page><option value="home">Inicio</option><option value="day">Día de Lactancia</option></select>
+            <select data-page></select>
           </label>
 
-          <section>
+          <section data-global-style-section>
             <h2>Color principal</h2>
             <div class="palettes" data-palettes></div>
           </section>
 
-          <section>
+          <section data-texts-section>
             <h2>Textos</h2>
             <div class="fields" data-fields></div>
           </section>
 
-          <section>
+          <section data-media-section>
+            <div class="section-title-row"><h2>Imágenes</h2><span class="beta">MVP 2</span></div>
+            <p class="help">Puedes reemplazar una imagen por una URL segura y editar su texto alternativo. La subida directa a biblioteca R2 queda preparada para la siguiente capa.</p>
+            <div class="media-list" data-media></div>
+          </section>
+
+          <section data-blocks-section>
             <h2>Bloques</h2>
             <p class="help">Activa, oculta o cambia el orden. Los bloques comerciales críticos mantienen sus links y tracking protegidos.</p>
             <div class="sections" data-sections></div>
+          </section>
+
+          <section data-testimonials-section>
+            <div class="section-title-row"><h2>Testimonios</h2><button type="button" class="small secondary" data-add-testimonial>+ Agregar</button></div>
+            <p class="help">Solo se muestran testimonios con autorización confirmada. Evita resultados clínicos específicos o promesas.</p>
+            <div class="repeat-list" data-testimonials></div>
+          </section>
+
+          <section data-pages-section>
+            <div class="section-title-row"><h2>Páginas nuevas</h2><button type="button" class="small secondary" data-add-page>+ Crear página</button></div>
+            <p class="help">Crea páginas seguras desde plantillas EDIN. Se publican bajo <code>/paginas/slug/</code>.</p>
+            <div class="repeat-list" data-custom-pages></div>
+          </section>
+
+          <section data-custom-page-editor hidden>
+            <div class="section-title-row"><h2>Constructor de página</h2><span class="beta">BLOQUES</span></div>
+            <div class="fields" data-custom-fields></div>
+            <div class="section-title-row"><h3>Bloques de la página</h3><div class="inline-actions"><select data-block-type><option value="text">Texto</option><option value="image">Imagen</option><option value="faq">FAQ</option><option value="cta">CTA</option><option value="testimonials">Testimonios</option></select><button type="button" class="small secondary" data-add-block>+ Bloque</button></div></div>
+            <div class="repeat-list" data-custom-blocks></div>
           </section>
 
           <div class="publish-bar">
@@ -57,7 +82,7 @@
         </aside>
 
         <section class="preview-panel">
-          <div class="preview-head"><strong>Vista previa</strong><span>Los cambios aparecen después de guardar el borrador.</span></div>
+          <div class="preview-head"><strong>Vista previa</strong><span>Los cambios del borrador se reflejan aquí.</span></div>
           <iframe data-frame title="Vista previa del sitio"></iframe>
         </section>
       </div>
