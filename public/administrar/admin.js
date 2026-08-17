@@ -30,14 +30,19 @@
   };
   const msg = (text, error=false) => { status.textContent=text; status.classList.toggle('error',error); };
   const previewUrl = () => `${schema[pageSelect.value].path}?editorial_preview=1&v=${Date.now()}`;
-  const refreshFrame = () => frame.src = previewUrl();
+  const refreshFrame = () => { frame.src = previewUrl(); };
+  const syncLivePreview = () => {
+    if (!state?.draft || !frame.contentWindow) return;
+    frame.contentWindow.postMessage({type:'mym-editorial-preview',config:state.draft}, location.origin);
+  };
+  frame.addEventListener('load', () => setTimeout(syncLivePreview, 40));
 
   const renderPalettes = () => {
     palettesRoot.innerHTML='';
     Object.entries(paletteMeta).forEach(([key,[label,color]]) => {
       const b=document.createElement('button'); b.type='button'; b.className='palette'+(state.draft.theme===key?' active':'');
       b.innerHTML=`<i style="background:${color}"></i><span>${label}</span>`;
-      b.onclick=()=>{state.draft.theme=key;renderPalettes();}; palettesRoot.appendChild(b);
+      b.onclick=()=>{state.draft.theme=key;renderPalettes();syncLivePreview();}; palettesRoot.appendChild(b);
     });
   };
   const renderFields = () => {
@@ -47,13 +52,17 @@
       const wrap=document.createElement('label'); wrap.className='field';
       const value=values[key]||''; const multiline=value.length>90 || key.toLowerCase().includes('lead');
       wrap.innerHTML=`<span>${label}</span>${multiline?'<textarea></textarea>':'<input type="text" />'}`;
-      const input=wrap.querySelector('input,textarea'); input.value=value; input.oninput=()=>values[key]=input.value;
+      const input=wrap.querySelector('input,textarea'); input.value=value;
+      input.oninput=()=>{values[key]=input.value;syncLivePreview();};
       fieldsRoot.appendChild(wrap);
     });
   };
   const move = (key,dir) => {
     const page=state.draft.pages[pageSelect.value], i=page.order.indexOf(key), j=i+dir;
-    if(i<0||j<0||j>=page.order.length)return; [page.order[i],page.order[j]]=[page.order[j],page.order[i]]; renderSections();
+    if(i<0||j<0||j>=page.order.length)return;
+    [page.order[i],page.order[j]]=[page.order[j],page.order[i]];
+    renderSections();
+    syncLivePreview();
   };
   const renderSections = () => {
     const pageKey=pageSelect.value, page=state.draft.pages[pageKey], labels=schema[pageKey].sections;
@@ -61,7 +70,7 @@
     page.order.filter(k=>labels[k]).forEach((key)=>{
       const row=document.createElement('div');row.className='section-row';
       row.innerHTML=`<input type="checkbox" ${page.sections[key]!==false?'checked':''} aria-label="Mostrar ${labels[key]}"><strong>${labels[key]}</strong><div class="move"><button type="button" aria-label="Subir">↑</button><button type="button" aria-label="Bajar">↓</button></div>`;
-      row.querySelector('input').onchange=(e)=>page.sections[key]=e.target.checked;
+      row.querySelector('input').onchange=(e)=>{page.sections[key]=e.target.checked;syncLivePreview();};
       const buttons=row.querySelectorAll('.move button');buttons[0].onclick=()=>move(key,-1);buttons[1].onclick=()=>move(key,1);
       sectionsRoot.appendChild(row);
     });
@@ -73,14 +82,30 @@
   };
 
   $('[data-login-form]').addEventListener('submit',async(e)=>{
-    e.preventDefault(); loginStatus.textContent='Entrando…'; loginStatus.classList.remove('error');
-    try { await api('/api/admin/login',{method:'POST',body:JSON.stringify({password:new FormData(e.currentTarget).get('password')})}); e.currentTarget.reset(); await load(); }
+    e.preventDefault();
+    const form = e.currentTarget;
+    loginStatus.textContent='Entrando…'; loginStatus.classList.remove('error');
+    try {
+      const password = new FormData(form).get('password');
+      await api('/api/admin/login',{method:'POST',body:JSON.stringify({password})});
+      form.reset();
+      await load();
+    }
     catch(err){ loginStatus.textContent=err.message; loginStatus.classList.add('error'); }
   });
   pageSelect.onchange=render;
-  $('[data-save]').onclick=async()=>{try{msg('Guardando borrador…');const r=await api('/api/admin/draft',{method:'PUT',body:JSON.stringify(state.draft)});state.draft=r.draft;msg('Borrador guardado.');refreshFrame();}catch(e){msg(e.message,true)}};
-  $('[data-preview]').onclick=()=>window.open(previewUrl(),'_blank','noopener');
-  $('[data-publish]').onclick=async()=>{if(!confirm('¿Publicar estos cambios en el sitio?'))return;try{msg('Publicando…');await api('/api/admin/draft',{method:'PUT',body:JSON.stringify(state.draft)});const r=await api('/api/admin/publish',{method:'POST'});state.published=r.published;state.draft=structuredClone(r.published);msg('Cambios publicados.');refreshFrame();}catch(e){msg(e.message,true)}};
+  $('[data-save]').onclick=async()=>{try{msg('Guardando borrador…');const r=await api('/api/admin/draft',{method:'PUT',body:JSON.stringify(state.draft)});state.draft=r.draft;msg('Borrador guardado.');syncLivePreview();}catch(e){msg(e.message,true)}};
+  $('[data-preview]').onclick=async()=>{
+    const popup=window.open('about:blank','_blank');
+    try{
+      msg('Preparando vista previa…');
+      const r=await api('/api/admin/draft',{method:'PUT',body:JSON.stringify(state.draft)});
+      state.draft=r.draft;
+      msg('Borrador guardado.');
+      if(popup) popup.location.href=previewUrl();
+    }catch(e){if(popup)popup.close();msg(e.message,true)}
+  };
+  $('[data-publish]').onclick=async()=>{if(!confirm('¿Publicar estos cambios en el sitio?'))return;try{msg('Publicando…');await api('/api/admin/draft',{method:'PUT',body:JSON.stringify(state.draft)});const r=await api('/api/admin/publish',{method:'POST'});state.published=r.published;state.draft=structuredClone(r.published);msg('Cambios publicados.');syncLivePreview();}catch(e){msg(e.message,true)}};
   $('[data-rollback]').onclick=async()=>{if(!confirm('¿Volver a la versión publicada anterior?'))return;try{msg('Restaurando…');const r=await api('/api/admin/rollback',{method:'POST'});state.published=r.published;state.draft=structuredClone(r.published);msg('Versión anterior restaurada.');render();}catch(e){msg(e.message,true)}};
   $('[data-logout]').onclick=async()=>{await api('/api/admin/logout',{method:'POST'}).catch(()=>{});location.reload();};
 

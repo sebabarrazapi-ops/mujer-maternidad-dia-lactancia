@@ -85,6 +85,12 @@
     }
   };
 
+  window.addEventListener('message', (event) => {
+    if (event.origin !== location.origin) return;
+    const data = event.data;
+    if (data?.type === 'mym-editorial-preview') apply(data.config);
+  });
+
   const preview = new URLSearchParams(location.search).get('editorial_preview') === '1';
   fetch(`/api/content${preview ? '?preview=1' : ''}`, { credentials:'same-origin', cache:'no-store' })
     .then((r) => r.ok ? r.json() : null)
