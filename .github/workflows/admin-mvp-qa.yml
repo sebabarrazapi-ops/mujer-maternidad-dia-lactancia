@@ -93,7 +93,8 @@ jobs:
           assert_file_contains /tmp/public3.json 'Título de prueba editorial'
 
           echo "QA_STEP=logout"
-          curl -fsS -b /tmp/cookies -X POST $BASE/api/admin/logout > /tmp/logout.json
+          # -c persiste el Set-Cookie de expiración; un navegador real hace lo mismo.
+          curl -fsS -b /tmp/cookies -c /tmp/cookies -X POST $BASE/api/admin/logout > /tmp/logout.json
           assert_file_contains /tmp/logout.json '"ok":true'
           test "$(curl -s -o /dev/null -w '%{http_code}' -b /tmp/cookies $BASE/api/admin/state)" = "401"
           echo "ADMIN_MVP_QA=PASS"
