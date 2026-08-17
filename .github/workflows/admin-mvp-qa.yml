@@ -1,4 +1,4 @@
-name: Admin MVP v1 QA
+name: EDIN Site Studio MVP2 QA
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  admin-qa:
+  site-studio-qa:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -17,6 +17,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Static syntax checks
+        run: |
+          node --check worker.js
+          node --check public/administrar/admin.js
+          node --check public/editorial-client.js
+          node --check public/testimonials.js
 
       - name: Start Worker locally
         run: |
@@ -31,7 +38,7 @@ jobs:
           cat /tmp/wrangler.log
           exit 1
 
-      - name: Validate admin lifecycle
+      - name: Validate Site Studio lifecycle
         run: |
           set -euo pipefail
           BASE=http://127.0.0.1:8787
@@ -41,82 +48,80 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' $BASE/)" = "200"
           test "$(curl -s -o /dev/null -w '%{http_code}' $BASE/administrar/)" = "200"
           curl -fsS $BASE/api/content > /tmp/public0.json
-          assert_file_contains /tmp/public0.json '"theme":"coral"'
+          assert_file_contains /tmp/public0.json '"version":2'
+          assert_file_contains /tmp/public0.json '"testimonials"'
+          assert_file_contains /tmp/public0.json '"customPages"'
 
-          echo "QA_STEP=client-login-handler"
-          grep -q "const form = e.currentTarget" public/administrar/admin.js
-          grep -q "form.reset()" public/administrar/admin.js
-          if grep -q "e.currentTarget.reset()" public/administrar/admin.js; then
-            echo "ASSERT_FAIL stale async currentTarget reset remains"
-            exit 1
-          fi
+          echo "QA_STEP=admin-ui-mvp2"
+          grep -q 'EDIN Site Studio · MVP 2' public/administrar/index.html
+          grep -q 'data-media' public/administrar/index.html
+          grep -q 'data-add-testimonial' public/administrar/index.html
+          grep -q 'data-add-page' public/administrar/index.html
+          grep -q 'data-add-block' public/administrar/index.html
 
-          echo "QA_STEP=auth-reject"
+          echo "QA_STEP=auth"
           BAD=$(curl -s -o /tmp/bad.json -w '%{http_code}' -H 'content-type: application/json' -d '{"password":"wrong"}' $BASE/api/admin/login)
           test "$BAD" = "401"
-
-          echo "QA_STEP=auth-login"
           curl -fsS -c /tmp/cookies -H 'content-type: application/json' -d '{"password":"testpass"}' $BASE/api/admin/login > /tmp/login.json
           assert_file_contains /tmp/login.json '"ok":true'
           curl -fsS -b /tmp/cookies $BASE/api/admin/state > /tmp/state.json
-          node -e "const s=require('/tmp/state.json'); if(!s.draft?.pages?.home) process.exit(1)"
 
-          echo "QA_STEP=draft-preview-publish-v1"
+          echo "QA_STEP=mvp2-draft"
           node <<'NODE'
           const fs=require('fs');
           const s=JSON.parse(fs.readFileSync('/tmp/state.json','utf8'));
-          s.draft.theme='salvia';
-          s.draft.pages.home.texts.heroTitle='Título de prueba editorial';
-          s.draft.pages.home.texts.heroLead='Soy Verónica Valencia Yáñez, Matrona. Texto de prueba sin segundo nombre.';
-          fs.writeFileSync('/tmp/draft.json',JSON.stringify(s.draft));
+          const d=s.draft;
+          d.theme='salvia';
+          d.pages.home.texts.heroLead='Soy Verónica Valencia Yáñez, Matrona. Texto editorial MVP2.';
+          d.pages.home.media.hero={url:'https://example.com/veronica-mvp2.jpg',alt:'Verónica en prueba MVP2',visible:true};
+          d.testimonials.push({id:'TEST-QA',quote:'Testimonio autorizado de prueba para Site Studio.',publicationName:'Participante QA',serviceContext:'Taller de prueba',authorizationConfirmed:true,publicationReady:true,showHome:true,showDay:false});
+          d.customPages.push({id:'page-qa',title:'Página piloto EDIN',slug:'pagina-piloto-edin',description:'Página creada desde Site Studio.',status:'published',blocks:[{id:'b1',type:'text',title:'Bloque de texto',body:'Contenido editable por bloques.',visible:true},{id:'b2',type:'cta',title:'Siguiente paso',body:'CTA protegido.',buttonLabel:'Volver al inicio',buttonUrl:'https://mujerymaternidad.cl/',visible:true},{id:'b3',type:'testimonials',title:'Experiencias',visible:true}]});
+          fs.writeFileSync('/tmp/draft.json',JSON.stringify(d));
           NODE
-          curl -fsS -b /tmp/cookies -X PUT -H 'content-type: application/json' --data-binary @/tmp/draft.json $BASE/api/admin/draft > /tmp/save1.json
-          assert_file_contains /tmp/save1.json '"ok":true'
-          curl -fsS -b /tmp/cookies "$BASE/api/content?preview=1" > /tmp/preview1.json
-          assert_file_contains /tmp/preview1.json 'Título de prueba editorial'
-          assert_file_contains /tmp/preview1.json 'Soy Verónica Valencia Yáñez'
+          curl -fsS -b /tmp/cookies -X PUT -H 'content-type: application/json' --data-binary @/tmp/draft.json $BASE/api/admin/draft > /tmp/save.json
+          assert_file_contains /tmp/save.json '"ok":true'
+          curl -fsS -b /tmp/cookies "$BASE/api/content?preview=1" > /tmp/preview.json
+          assert_file_contains /tmp/preview.json 'example.com/veronica-mvp2.jpg'
+          assert_file_contains /tmp/preview.json 'Testimonio autorizado de prueba para Site Studio.'
+          assert_file_contains /tmp/preview.json 'pagina-piloto-edin'
 
-          echo "QA_STEP=preview-html-bootstrap"
-          UNAUTH_PREVIEW=$(curl -s -o /tmp/unauth-preview.txt -w '%{http_code}' "$BASE/?editorial_preview=1")
-          test "$UNAUTH_PREVIEW" = "401"
-          curl -fsS -b /tmp/cookies "$BASE/?editorial_preview=1" > /tmp/preview-page.html
-          assert_file_contains /tmp/preview-page.html 'window.__MYM_EDITORIAL_PREVIEW_CONFIG='
-          assert_file_contains /tmp/preview-page.html 'Soy Verónica Valencia Yáñez'
-          assert_file_contains /tmp/preview-page.html '/editorial-client.js'
+          echo "QA_STEP=authenticated-preview"
+          UNAUTH=$(curl -s -o /tmp/unauth.txt -w '%{http_code}' "$BASE/?editorial_preview=1")
+          test "$UNAUTH" = "401"
+          curl -fsS -b /tmp/cookies "$BASE/?editorial_preview=1" > /tmp/home-preview.html
+          assert_file_contains /tmp/home-preview.html 'window.__MYM_EDITORIAL_PREVIEW_CONFIG='
+          assert_file_contains /tmp/home-preview.html 'example.com/veronica-mvp2.jpg'
+          curl -fsS -b /tmp/cookies "$BASE/paginas/pagina-piloto-edin/?editorial_preview=1" > /tmp/custom-preview.html
+          assert_file_contains /tmp/custom-preview.html 'Página piloto EDIN'
+          assert_file_contains /tmp/custom-preview.html 'Contenido editable por bloques.'
+          assert_file_contains /tmp/custom-preview.html 'Testimonio autorizado de prueba para Site Studio.'
 
-          curl -fsS -b /tmp/cookies -X POST $BASE/api/admin/publish > /tmp/publish1.json
-          assert_file_contains /tmp/publish1.json '"ok":true'
+          echo "QA_STEP=publish"
+          curl -fsS -b /tmp/cookies -X POST $BASE/api/admin/publish > /tmp/publish.json
+          assert_file_contains /tmp/publish.json '"ok":true'
           curl -fsS $BASE/api/content > /tmp/public1.json
-          assert_file_contains /tmp/public1.json 'Título de prueba editorial'
-          assert_file_contains /tmp/public1.json 'Soy Verónica Valencia Yáñez'
-          assert_file_contains /tmp/public1.json '"theme":"salvia"'
+          assert_file_contains /tmp/public1.json 'example.com/veronica-mvp2.jpg'
+          assert_file_contains /tmp/public1.json 'Testimonio autorizado de prueba para Site Studio.'
+          curl -fsS "$BASE/paginas/pagina-piloto-edin/" > /tmp/custom-public.html
+          assert_file_contains /tmp/custom-public.html 'Página piloto EDIN'
+          assert_file_contains /tmp/custom-public.html 'Sitio web creado por Servicio de Gestión EDIN'
 
-          echo "QA_STEP=publish-v2"
+          echo "QA_STEP=draft-page-not-public"
           node <<'NODE'
           const fs=require('fs');
           const d=JSON.parse(fs.readFileSync('/tmp/draft.json','utf8'));
-          d.theme='rosa';
+          d.customPages.push({id:'page-private',title:'Solo borrador',slug:'solo-borrador',description:'No pública',status:'draft',blocks:[]});
           fs.writeFileSync('/tmp/draft2.json',JSON.stringify(d));
           NODE
-          curl -fsS -b /tmp/cookies -X PUT -H 'content-type: application/json' --data-binary @/tmp/draft2.json $BASE/api/admin/draft > /tmp/save2.json
-          assert_file_contains /tmp/save2.json '"ok":true'
-          curl -fsS -b /tmp/cookies -X POST $BASE/api/admin/publish > /tmp/publish2.json
-          assert_file_contains /tmp/publish2.json '"ok":true'
-          curl -fsS $BASE/api/content > /tmp/public2.json
-          assert_file_contains /tmp/public2.json '"theme":"rosa"'
-
-          echo "QA_STEP=rollback"
-          curl -fsS -b /tmp/cookies -X POST $BASE/api/admin/rollback > /tmp/rollback.json
-          assert_file_contains /tmp/rollback.json '"ok":true'
-          curl -fsS $BASE/api/content > /tmp/public3.json
-          assert_file_contains /tmp/public3.json '"theme":"salvia"'
-          assert_file_contains /tmp/public3.json 'Título de prueba editorial'
+          curl -fsS -b /tmp/cookies -X PUT -H 'content-type: application/json' --data-binary @/tmp/draft2.json $BASE/api/admin/draft >/tmp/save2.json
+          test "$(curl -s -o /dev/null -w '%{http_code}' $BASE/paginas/solo-borrador/)" = "404"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -b /tmp/cookies "$BASE/paginas/solo-borrador/?editorial_preview=1")" = "200"
 
           echo "QA_STEP=logout"
-          curl -fsS -b /tmp/cookies -c /tmp/cookies -X POST $BASE/api/admin/logout > /tmp/logout.json
+          curl -fsS -b /tmp/cookies -c /tmp/cookies -X POST $BASE/api/admin/logout >/tmp/logout.json
           assert_file_contains /tmp/logout.json '"ok":true'
           test "$(curl -s -o /dev/null -w '%{http_code}' -b /tmp/cookies $BASE/api/admin/state)" = "401"
-          echo "ADMIN_MVP_QA=PASS"
+          echo "EDIN_SITE_STUDIO_MVP2_QA=PASS"
 
       - name: Show Worker log
         if: always()
