@@ -21,12 +21,36 @@ function sameOrigin(req){const origin=req.headers.get('origin');return !origin||
 function cleanConfig(input){if(!input||typeof input!=='object')throw new Error('Configuración inválida');const out={version:1,theme:THEMES.has(input.theme)?input.theme:'coral',pages:{}};for(const page of ['home','day']){const src=input.pages?.[page]||{},texts={};for(const key of FIELDS[page]){const v=src.texts?.[key];if(typeof v==='string')texts[key]=v.trim().slice(0,1200);}const sections={};for(const key of SECTIONS[page])sections[key]=src.sections?.[key]!==false;const requested=Array.isArray(src.order)?src.order.filter(x=>SECTIONS[page].includes(x)):[];out.pages[page]={texts,sections,order:[...new Set([...requested,...SECTIONS[page]])]};}return out;}
 async function defaults(env,requestUrl){const r=await env.ASSETS.fetch(new Request(new URL('/editorial-defaults.json',requestUrl)));return r.json();}
 async function store(env,path,init={}){const stub=env.EDITORIAL.get(env.EDITORIAL.idFromName('global'));return stub.fetch(new Request('https://editorial.internal'+path,init));}
-async function assetWithEditorial(req,env){const r=await env.ASSETS.fetch(req);const type=r.headers.get('content-type')||'';if(!r.ok||!type.includes('text/html'))return r;const text=await r.text();if(text.includes('/editorial-client.js'))return new Response(text,r);const injected=text.replace('</body>','<script src="/editorial-client.js"></script></body>');const headers=new Headers(r.headers);headers.delete('content-length');return new Response(injected,{status:r.status,headers});}
+async function getStoredOrDefaults(env,path,requestUrl){const r=await store(env,path);return r.ok?await r.json():await defaults(env,requestUrl);}
+function safeInlineJson(value){return JSON.stringify(value).replaceAll('<','\\u003c').replaceAll('\u2028','\\u2028').replaceAll('\u2029','\\u2029');}
+async function assetWithEditorial(req,env){
+  const r=await env.ASSETS.fetch(req);
+  const type=r.headers.get('content-type')||'';
+  if(!r.ok||!type.includes('text/html'))return r;
+  let text=await r.text();
+  const url=new URL(req.url);
+  const preview=url.searchParams.get('editorial_preview')==='1';
+  let boot='';
+  if(preview){
+    if(!(await isAdmin(req,env)))return new Response('No autorizado',{status:401,headers:{'content-type':'text/plain; charset=utf-8','cache-control':'no-store'}});
+    const draft=await getStoredOrDefaults(env,'/draft',req.url);
+    boot=`<script>window.__MYM_EDITORIAL_PREVIEW_CONFIG=${safeInlineJson(draft)};</script>`;
+  }
+  if(text.includes('<script src="/editorial-client.js"></script>')){
+    text=text.replace('<script src="/editorial-client.js"></script>',`${boot}<script src="/editorial-client.js"></script>`);
+  }else{
+    text=text.replace('</body>',`${boot}<script src="/editorial-client.js"></script></body>`);
+  }
+  const headers=new Headers(r.headers);
+  headers.delete('content-length');
+  headers.set('cache-control','no-store');
+  return new Response(text,{status:r.status,headers});
+}
 
 export default {async fetch(req,env){const url=new URL(req.url),path=url.pathname;
   if(path==='/api/admin/login'&&req.method==='POST'){if(!env.ADMIN_PASSWORD)return json({error:'Administrador aún no configurado'},503);if(!sameOrigin(req))return json({error:'Origen no permitido'},403);const body=await req.json().catch(()=>({}));if(!equal(await digest(String(body.password||'')),await digest(env.ADMIN_PASSWORD)))return json({error:'Clave incorrecta'},401);return json({ok:true},200,{'set-cookie':await makeCookie(env)});}
   if(path==='/api/admin/logout'&&req.method==='POST')return json({ok:true},200,{'set-cookie':`${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`});
-  if(path==='/api/content'&&req.method==='GET'){const preview=url.searchParams.get('preview')==='1';if(preview&&!(await isAdmin(req,env)))return json({error:'No autorizado'},401);const r=await store(env,preview?'/draft':'/published');if(r.ok)return new Response(r.body,{headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});return json(await defaults(env,req.url));}
+  if(path==='/api/content'&&req.method==='GET'){const preview=url.searchParams.get('preview')==='1';if(preview&&!(await isAdmin(req,env)))return json({error:'No autorizado'},401);const config=await getStoredOrDefaults(env,preview?'/draft':'/published',req.url);return json(config);}
   if(path.startsWith('/api/admin/')){if(!(await isAdmin(req,env)))return json({error:'No autorizado'},401);if(!sameOrigin(req))return json({error:'Origen no permitido'},403);
     if(path==='/api/admin/state'&&req.method==='GET'){const state=await (await store(env,'/state')).json();if(!state.published)state.published=await defaults(env,req.url);if(!state.draft)state.draft=structuredClone(state.published);return json(state);}
     if(path==='/api/admin/draft'&&req.method==='PUT'){const raw=await req.text();if(raw.length>60000)return json({error:'Cambio demasiado grande'},413);let cleaned;try{cleaned=cleanConfig(JSON.parse(raw));}catch(e){return json({error:e.message},400);}await store(env,'/draft',{method:'PUT',body:JSON.stringify(cleaned),headers:{'content-type':'application/json'}});return json({ok:true,draft:cleaned});}
