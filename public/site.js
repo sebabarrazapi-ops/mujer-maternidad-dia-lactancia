@@ -141,7 +141,11 @@
 
   const pageMeta = content.analytics?.[pageKey] || { pageId: pageKey || 'unknown', pageType: 'GENERAL', pageName: document.title };
   const pixelId = '1060562626332842';
-  if (!window.__MYM_GLOBAL_META_SENT__) {
+  const hostname = window.location.hostname.toLowerCase();
+  const metaTrackingAllowed = hostname === 'mujerymaternidad.cl' || hostname === 'www.mujerymaternidad.cl' || hostname === 'localhost' || hostname === '127.0.0.1';
+
+  // No enviar eventos desde dominios técnicos (por ejemplo *.workers.dev).
+  if (metaTrackingAllowed && !window.__MYM_GLOBAL_META_SENT__) {
     window.__MYM_GLOBAL_META_SENT__ = true;
     const script = document.createElement('script');
     const safeMeta = JSON.stringify({ page_id: pageMeta.pageId, page_type: pageMeta.pageType, page_name: pageMeta.pageName, page_path: window.location.pathname });
