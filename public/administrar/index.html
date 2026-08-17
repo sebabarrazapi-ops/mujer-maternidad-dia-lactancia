@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Administrar | Mujer y Maternidad</title>
+  <link rel="stylesheet" href="/administrar/admin.css" />
+</head>
+<body>
+  <main class="shell">
+    <section class="login card" data-login>
+      <div class="brand">Mujer y Maternidad</div>
+      <h1>Administrar sitio</h1>
+      <p>Edita textos, colores y visibilidad sin tocar el código ni la configuración de Meta/Hotmart.</p>
+      <form data-login-form>
+        <label>Clave de administración<input type="password" name="password" autocomplete="current-password" required /></label>
+        <button type="submit">Entrar</button>
+      </form>
+      <p class="status" data-login-status></p>
+    </section>
+
+    <section class="app" data-app hidden>
+      <header class="topbar">
+        <div><strong>Mujer y Maternidad</strong><span>Administrador MVP v1</span></div>
+        <div class="top-actions"><button class="ghost" data-preview>Vista previa</button><button class="ghost" data-logout>Salir</button></div>
+      </header>
+
+      <div class="workspace">
+        <aside class="panel controls">
+          <label>Página
+            <select data-page><option value="home">Inicio</option><option value="day">Día de Lactancia</option></select>
+          </label>
+
+          <section>
+            <h2>Color principal</h2>
+            <div class="palettes" data-palettes></div>
+          </section>
+
+          <section>
+            <h2>Textos</h2>
+            <div class="fields" data-fields></div>
+          </section>
+
+          <section>
+            <h2>Bloques</h2>
+            <p class="help">Activa, oculta o cambia el orden. Los bloques comerciales críticos mantienen sus links y tracking protegidos.</p>
+            <div class="sections" data-sections></div>
+          </section>
+
+          <div class="publish-bar">
+            <button class="secondary" data-save>Guardar borrador</button>
+            <button data-publish>Publicar cambios</button>
+            <button class="danger" data-rollback>Volver a versión anterior</button>
+          </div>
+          <p class="status" data-status></p>
+        </aside>
+
+        <section class="preview-panel">
+          <div class="preview-head"><strong>Vista previa</strong><span>Los cambios aparecen después de guardar el borrador.</span></div>
+          <iframe data-frame title="Vista previa del sitio"></iframe>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script src="/administrar/admin.js"></script>
+</body>
+</html>
