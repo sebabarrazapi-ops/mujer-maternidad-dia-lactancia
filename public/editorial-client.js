@@ -93,7 +93,9 @@
   });
 
   const preview = new URLSearchParams(location.search).get('editorial_preview') === '1';
-  if (preview) {
+  if (preview && window.__MYM_EDITORIAL_PREVIEW_CONFIG?.pages) {
+    apply(window.__MYM_EDITORIAL_PREVIEW_CONFIG);
+  } else if (preview) {
     try {
       const snapshot = JSON.parse(sessionStorage.getItem(PREVIEW_KEY) || 'null');
       if (snapshot?.pages) apply(snapshot);
