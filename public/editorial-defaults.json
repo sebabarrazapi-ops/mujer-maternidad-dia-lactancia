@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "theme": "coral",
+  "pages": {
+    "home": {
+      "texts": {
+        "heroTitle": "Información clara y acompañamiento profesional para embarazo, parto, postparto y lactancia",
+        "heroLead": "Soy Verónica Andrea Valencia Yáñez, Matrona. Aquí puedes encontrar consultas, talleres y recursos prácticos para comprender mejor cada etapa y elegir el apoyo que necesitas.",
+        "journeyTitle": "¿En qué etapa estás?",
+        "journeyLead": "No necesitas conocer el nombre exacto de un servicio. Empieza por la etapa o necesidad que más se parece a lo que estás viviendo y te mostraremos las opciones disponibles.",
+        "guidanceTitle": "Podemos ayudarte a encontrar el punto de partida",
+        "guidanceLead": "Si todavía no sabes si necesitas un taller, una consulta o simplemente información, escríbenos y cuéntanos de forma general qué estás buscando.",
+        "pillarsTitle": "Un proyecto que integra atención, educación y comunidad",
+        "pillarsLead": "Puedes comenzar por una consulta individual, aprender en un taller, participar en espacios de comunidad o utilizar recursos digitales a tu propio ritmo.",
+        "eventTitle": "Día de Lactancia",
+        "eventLead": "Dos talleres online y en vivo: Introducción a la Lactancia por la mañana y Banco de Leche Materna por la tarde.",
+        "testimonialsTitle": "Lo que cuentan quienes han trabajado con Verónica",
+        "resourcesTitle": "Material para guardar y consultar",
+        "aboutTitle": "Una forma cercana y profesional de acompañar",
+        "contactTitle": "¿Necesitas orientación o quieres consultar una actividad?"
+      },
+      "sections": {
+        "trust": true,
+        "journey": true,
+        "guidance": true,
+        "pillars": true,
+        "event": true,
+        "testimonials": true,
+        "resources": true,
+        "about": true,
+        "contact": true
+      },
+      "order": ["trust", "journey", "guidance", "pillars", "event", "testimonials", "resources", "about", "contact"]
+    },
+    "day": {
+      "texts": {
+        "heroTitle": "Prepárate para la lactancia antes de tener que improvisar",
+        "heroLead": "Comprende qué observar en los primeros días y aprende a organizar extracción y banco de leche con información clara, práctica y guiada.",
+        "proofTitle": "Más claridad y confianza para vivir la lactancia",
+        "fitTitle": "Este Día de Lactancia puede ayudarte si...",
+        "pricingTitle": "Una jornada completa o el taller que necesitas",
+        "introTitle": "Introducción a la Lactancia",
+        "bankTitle": "Banco de Leche Materna",
+        "profileTitle": "Verónica Andrea Valencia Yáñez",
+        "faqTitle": "Resuelve tus dudas antes de reservar",
+        "finalTitle": "Llega a la lactancia con más información y menos improvisación"
+      },
+      "sections": {
+        "proof": true,
+        "fit": true,
+        "pricing": true,
+        "intro": true,
+        "bank": true,
+        "profile": true,
+        "faq": true,
+        "final": true
+      },
+      "order": ["proof", "fit", "pricing", "intro", "bank", "profile", "faq", "final"]
+    }
+  }
+}

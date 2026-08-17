@@ -1,7 +1,17 @@
 {
   "name": "mujer-maternidad-dia-lactancia",
+  "main": "worker.js",
   "compatibility_date": "2026-08-16",
   "assets": {
-    "directory": "./public"
-  }
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "EDITORIAL", "class_name": "EditorialStore" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["EditorialStore"] }
+  ]
 }

@@ -1,0 +1,104 @@
+name: Admin MVP v1 QA
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  admin-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Start Worker locally
+        run: |
+          npx wrangler@4 dev --local --port 8787 --var ADMIN_PASSWORD:testpass > /tmp/wrangler.log 2>&1 &
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:8787/ >/dev/null; then
+              echo "WORKER_READY=YES"
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/wrangler.log
+          exit 1
+
+      - name: Validate admin lifecycle
+        run: |
+          set -euo pipefail
+          BASE=http://127.0.0.1:8787
+          assert_file_contains(){ grep -q -- "$2" "$1" || { echo "ASSERT_FAIL file=$1 expected=$2"; cat "$1"; exit 1; }; }
+
+          echo "QA_STEP=public-routes"
+          test "$(curl -s -o /dev/null -w '%{http_code}' $BASE/)" = "200"
+          test "$(curl -s -o /dev/null -w '%{http_code}' $BASE/administrar/)" = "200"
+          curl -fsS $BASE/api/content > /tmp/public0.json
+          assert_file_contains /tmp/public0.json '"theme":"coral"'
+
+          echo "QA_STEP=auth-reject"
+          BAD=$(curl -s -o /tmp/bad.json -w '%{http_code}' -H 'content-type: application/json' -d '{"password":"wrong"}' $BASE/api/admin/login)
+          test "$BAD" = "401"
+
+          echo "QA_STEP=auth-login"
+          curl -fsS -c /tmp/cookies -H 'content-type: application/json' -d '{"password":"testpass"}' $BASE/api/admin/login > /tmp/login.json
+          assert_file_contains /tmp/login.json '"ok":true'
+          curl -fsS -b /tmp/cookies $BASE/api/admin/state > /tmp/state.json
+          node -e "const s=require('/tmp/state.json'); if(!s.draft?.pages?.home) process.exit(1)"
+
+          echo "QA_STEP=draft-preview-publish-v1"
+          node <<'NODE'
+          const fs=require('fs');
+          const s=JSON.parse(fs.readFileSync('/tmp/state.json','utf8'));
+          s.draft.theme='salvia';
+          s.draft.pages.home.texts.heroTitle='Título de prueba editorial';
+          fs.writeFileSync('/tmp/draft.json',JSON.stringify(s.draft));
+          NODE
+          curl -fsS -b /tmp/cookies -X PUT -H 'content-type: application/json' --data-binary @/tmp/draft.json $BASE/api/admin/draft > /tmp/save1.json
+          assert_file_contains /tmp/save1.json '"ok":true'
+          curl -fsS -b /tmp/cookies "$BASE/api/content?preview=1" > /tmp/preview1.json
+          assert_file_contains /tmp/preview1.json 'Título de prueba editorial'
+          curl -fsS -b /tmp/cookies -X POST $BASE/api/admin/publish > /tmp/publish1.json
+          assert_file_contains /tmp/publish1.json '"ok":true'
+          curl -fsS $BASE/api/content > /tmp/public1.json
+          assert_file_contains /tmp/public1.json 'Título de prueba editorial'
+          assert_file_contains /tmp/public1.json '"theme":"salvia"'
+
+          echo "QA_STEP=publish-v2"
+          node <<'NODE'
+          const fs=require('fs');
+          const d=JSON.parse(fs.readFileSync('/tmp/draft.json','utf8'));
+          d.theme='rosa';
+          fs.writeFileSync('/tmp/draft2.json',JSON.stringify(d));
+          NODE
+          curl -fsS -b /tmp/cookies -X PUT -H 'content-type: application/json' --data-binary @/tmp/draft2.json $BASE/api/admin/draft > /tmp/save2.json
+          assert_file_contains /tmp/save2.json '"ok":true'
+          curl -fsS -b /tmp/cookies -X POST $BASE/api/admin/publish > /tmp/publish2.json
+          assert_file_contains /tmp/publish2.json '"ok":true'
+          curl -fsS $BASE/api/content > /tmp/public2.json
+          assert_file_contains /tmp/public2.json '"theme":"rosa"'
+
+          echo "QA_STEP=rollback"
+          curl -fsS -b /tmp/cookies -X POST $BASE/api/admin/rollback > /tmp/rollback.json
+          assert_file_contains /tmp/rollback.json '"ok":true'
+          curl -fsS $BASE/api/content > /tmp/public3.json
+          assert_file_contains /tmp/public3.json '"theme":"salvia"'
+          assert_file_contains /tmp/public3.json 'Título de prueba editorial'
+
+          echo "QA_STEP=logout"
+          # -c persiste el Set-Cookie de expiración; un navegador real hace lo mismo.
+          curl -fsS -b /tmp/cookies -c /tmp/cookies -X POST $BASE/api/admin/logout > /tmp/logout.json
+          assert_file_contains /tmp/logout.json '"ok":true'
+          test "$(curl -s -o /dev/null -w '%{http_code}' -b /tmp/cookies $BASE/api/admin/state)" = "401"
+          echo "ADMIN_MVP_QA=PASS"
+
+      - name: Show Worker log
+        if: always()
+        run: cat /tmp/wrangler.log || true
