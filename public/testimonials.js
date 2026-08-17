@@ -85,34 +85,14 @@ window.MYM_TESTIMONIALS = [
     }
 
     const landingTestimonials = byPage('dia-de-lactancia');
-
     const proofSection = document.querySelector('[data-cro-proof-section]');
     const proofRoot = document.querySelector('[data-cro-proof-root]');
     if (proofSection && proofRoot && landingTestimonials.length) {
       proofRoot.innerHTML = landingTestimonials.slice(0, 2).map(cardHtml).join('');
       proofSection.hidden = false;
     }
-
-    const landingSection = document.querySelector('.testimonials-placeholder');
-    if (landingSection && landingTestimonials.length) {
-      landingSection.hidden = false;
-      landingSection.removeAttribute('aria-hidden');
-      landingSection.classList.add('testimonials-section');
-      landingSection.innerHTML = `
-        <div class="container">
-          <div class="section-heading centered">
-            <span class="eyebrow">EXPERIENCIAS REALES</span>
-            <h2>Lo que cuentan quienes han trabajado con Verónica</h2>
-            <p>Experiencias compartidas con autorización.</p>
-          </div>
-          <div class="testimonial-grid">${landingTestimonials.map(cardHtml).join('')}</div>
-        </div>`;
-    }
   };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', render, { once: true });
-  } else {
-    render();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render, { once: true });
+  else render();
 })();

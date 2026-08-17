@@ -38,13 +38,12 @@ jobs:
             fi
             sleep 1
           done
-          echo "PREVIEW_READY=NO"
           cat /tmp/mym-preview.log
           exit 1
 
-      - name: Run CRO browser QA
+      - name: Run final web browser QA
         run: |
-          cat > /tmp/cro_qa.py <<'PY'
+          cat > /tmp/final_web_qa.py <<'PY'
           import json
           from pathlib import Path
           from urllib.parse import urlparse, parse_qs
@@ -72,44 +71,51 @@ jobs:
               page.on("pageerror", lambda exc: js_errors.append(str(exc)))
               page.on("requestfailed", lambda req: local_failed.append(f"{req.method} {req.url} :: {req.failure}") if req.url.startswith(BASE) else None)
 
-              for name, route in [
+              routes = [
                   ("home", "/"), ("servicios", "/servicios/"), ("talleres", "/talleres/"),
                   ("recursos", "/recursos/"), ("sobre-mi", "/sobre-mi/"),
                   ("contacto", "/contacto/"), ("dia-de-lactancia", "/dia-de-lactancia/")
-              ]:
+              ]
+              for name, route in routes:
                   response = page.goto(BASE + route, wait_until="domcontentloaded")
-                  page.wait_for_timeout(350)
+                  page.wait_for_timeout(250)
                   check(f"route:{name}:200", response is not None and response.status == 200, f"status={response.status if response else 'NONE'}")
-                  check(f"route:{name}:no-overflow-desktop", no_overflow(page), f"scroll={page.evaluate('document.documentElement.scrollWidth')} client={page.evaluate('document.documentElement.clientWidth')}")
+                  check(f"route:{name}:no-overflow", no_overflow(page), f"scroll={page.evaluate('document.documentElement.scrollWidth')} client={page.evaluate('document.documentElement.clientWidth')}")
 
+              # Home final.
               page.goto(BASE + "/", wait_until="domcontentloaded")
               page.wait_for_timeout(700)
-              check("home:current-copy", "Educación, acompañamiento y comunidad" in page.locator("h1").inner_text(), page.locator("h1").inner_text())
+              h1 = page.locator("h1").inner_text()
+              check("home:final-h1", "Información clara y acompañamiento profesional" in h1, h1)
               check("home:journey-cards", page.locator(".journey-card").count() >= 6, f"count={page.locator('.journey-card').count()}")
               check("home:professional-pillars", page.locator("[data-professional-pillars] article").count() == 4, f"count={page.locator('[data-professional-pillars] article').count()}")
-              home_cards = page.locator("[data-testimonials] .testimonial-card")
-              check("home:testimonials-public", home_cards.count() >= 3, f"count={home_cards.count()}")
-              check("home:testimonials-anonymous", "Paciente de lactancia" in page.locator("[data-testimonials]").inner_text(), "anonymous labels")
+              check("home:event-dia-lactancia", page.locator("a[href='/dia-de-lactancia/']").count() >= 1, "event linked")
+              check("home:testimonials-public", page.locator("[data-testimonials] .testimonial-card").count() >= 3, f"count={page.locator('[data-testimonials] .testimonial-card').count()}")
+              check("home:no-quick-hub", page.locator(".hub-section").count() == 0, f"count={page.locator('.hub-section').count()}")
+              check("home:no-duplicate-areas", page.locator("#areas").count() == 0, f"count={page.locator('#areas').count()}")
+              check("home:no-duplicate-digital-catalog", page.locator("[data-digital-products]").count() == 0, f"count={page.locator('[data-digital-products]').count()}")
               check("home:edin-credit", "Sitio web creado por Servicio de Gestión EDIN" in page.locator("footer").inner_text(), "footer credit")
-              check("home:generic-footer-disclaimer-removed", "fines educativos y de orientación general" not in page.locator("footer").inner_text().lower(), "footer")
-              page.screenshot(path=str(OUT / "home-desktop.png"), full_page=True)
+              check("home:no-generic-disclaimer", "fines educativos y de orientación general" not in page.locator("footer").inner_text().lower(), "footer")
+              page.screenshot(path=str(OUT / "home-final-desktop.png"), full_page=True)
 
-              landing_url = BASE + "/dia-de-lactancia/?utm_source=qa&utm_medium=preview&utm_campaign=cro_v2&utm_content=browser&fbclid=QA123"
+              # Landing final simplificada.
+              landing_url = BASE + "/dia-de-lactancia/?utm_source=qa&utm_medium=preview&utm_campaign=final_web&utm_content=browser&fbclid=QA123"
               page.goto(landing_url, wait_until="domcontentloaded")
               page.wait_for_timeout(800)
               check("landing:cro-h1", "antes de tener que improvisar" in page.locator(".hero h1").inner_text().lower(), page.locator(".hero h1").inner_text())
               check("landing:hero-benefits", page.locator("[data-cro-benefits] span").count() == 3, f"count={page.locator('[data-cro-benefits] span').count()}")
-              check("landing:logo-keeps-visitor", page.locator(".site-header .brand").get_attribute("href") == "#inicio", page.locator(".site-header .brand").get_attribute("href") or "")
-              check("landing:early-proof-visible", page.locator("[data-cro-proof-section]").is_visible(), "early social proof")
-              check("landing:early-proof-two-cards", page.locator("[data-cro-proof-root] .testimonial-card").count() == 2, f"count={page.locator('[data-cro-proof-root] .testimonial-card').count()}")
-              landing_cards = page.locator("#testimonios .testimonial-card")
-              check("landing:testimonials-public", landing_cards.count() >= 3, f"count={landing_cards.count()}")
-              check("landing:rating-visible", "5 estrellas para ambos talleres" in page.locator("#testimonios").inner_text(), "authorized rating")
-              check("landing:payment-trust-hero", "Pago seguro a través de Hotmart" in page.locator(".hero").inner_text(), "hero payment trust")
-              check("landing:payment-trust-offer", "Compra procesada de forma segura por Hotmart" in page.locator("#elige").inner_text(), "pricing payment trust")
-              check("landing:no-prepurchase-service-exit", page.locator(".next-step-section a[href^='/servicios'], .next-step-section a[href^='/recursos'], .next-step-section a[href*='whatsapp']").count() == 0, "closing section has no external exits")
-              check("landing:closing-combo-cta", page.locator(".next-step-section .combo-link").count() == 1, "purchase-focused closing")
-              check("landing:generic-footer-disclaimer-removed", "fines educativos" not in page.locator("footer").inner_text().lower(), "footer")
+              check("landing:logo-goes-home", page.locator(".site-header .brand").get_attribute("href") == "/", page.locator(".site-header .brand").get_attribute("href") or "")
+              check("landing:one-proof-block", page.locator("[data-cro-proof-section]").count() == 1 and page.locator("[data-cro-proof-section]").is_visible(), "single proof block")
+              check("landing:proof-two-cards", page.locator("[data-cro-proof-root] .testimonial-card").count() == 2, f"count={page.locator('[data-cro-proof-root] .testimonial-card').count()}")
+              check("landing:rating-in-proof", "5 estrellas para ambos talleres" in page.locator("[data-cro-proof-root]").inner_text(), "rating visible")
+              check("landing:no-second-testimonials", page.locator("#testimonios, .testimonials-placeholder").count() == 0, f"count={page.locator('#testimonios, .testimonials-placeholder').count()}")
+              check("landing:no-purchase-steps", page.locator(".purchase-steps-section").count() == 0, "removed")
+              check("landing:no-international-table", page.locator(".international-section").count() == 0, "removed")
+              check("landing:no-duplicate-combo", page.locator(".combo-section").count() == 0, "removed")
+              check("landing:no-next-step", page.locator(".next-step-section").count() == 0, "removed")
+              check("landing:payment-trust-hero", "Pago seguro a través de Hotmart" in page.locator(".hero").inner_text(), "hero trust")
+              check("landing:payment-trust-offer", "Compra procesada de forma segura por Hotmart" in page.locator("#elige").inner_text(), "offer trust")
+              check("landing:no-generic-disclaimer", "fines educativos" not in page.locator("footer").inner_text().lower(), "footer")
               check("landing:edin-credit", "Sitio web creado por Servicio de Gestión EDIN" in page.locator("footer").inner_text(), "footer credit")
               check("landing:canonical", page.locator('link[rel="canonical"]').get_attribute("href") == "https://mujerymaternidad.cl/dia-de-lactancia/", page.locator('link[rel="canonical"]').get_attribute("href") or "")
 
@@ -125,32 +131,47 @@ jobs:
                   check(f"landing:{key}:hotmart", product_id in parsed.path, href)
                   check(f"landing:{key}:utm-source", qs.get("utm_source") == ["qa"], href)
                   check(f"landing:{key}:utm-medium", qs.get("utm_medium") == ["preview"], href)
-                  check(f"landing:{key}:utm-campaign", qs.get("utm_campaign") == ["cro_v2"], href)
+                  check(f"landing:{key}:utm-campaign", qs.get("utm_campaign") == ["final_web"], href)
                   check(f"landing:{key}:fbclid", qs.get("fbclid") == ["QA123"], href)
 
-              check("landing:no-overflow-desktop", no_overflow(page), f"scroll={page.evaluate('document.documentElement.scrollWidth')} client={page.evaluate('document.documentElement.clientWidth')}")
-              page.screenshot(path=str(OUT / "dia-lactancia-desktop.png"), full_page=True)
+              check("landing:no-overflow-desktop", no_overflow(page), "desktop")
+              page.screenshot(path=str(OUT / "dia-lactancia-final-desktop.png"), full_page=True)
 
               mobile = browser.new_page(viewport={"width": 390, "height": 844})
               m_js_errors, m_local_failed = [], []
               mobile.on("pageerror", lambda exc: m_js_errors.append(str(exc)))
               mobile.on("requestfailed", lambda req: m_local_failed.append(f"{req.method} {req.url} :: {req.failure}") if req.url.startswith(BASE) else None)
-              mobile.goto(BASE + "/dia-de-lactancia/?utm_source=qa&utm_medium=preview&utm_campaign=cro_v2&fbclid=QA123", wait_until="domcontentloaded")
+              mobile.goto(landing_url, wait_until="domcontentloaded")
               mobile.wait_for_timeout(800)
-              check("landing:no-overflow-mobile", no_overflow(mobile), f"scroll={mobile.evaluate('document.documentElement.scrollWidth')} client={mobile.evaluate('document.documentElement.clientWidth')}")
+              check("landing:no-overflow-mobile", no_overflow(mobile), "390px")
               check("landing:primary-combo-mobile", mobile.locator(".hero .combo-link").is_visible(), "390px")
               check("landing:sticky-mobile-cta", mobile.locator("[data-cro-mobile-sticky]").is_visible(), "390px")
               check("landing:sticky-mobile-hotmart", "S107178973Y" in (mobile.locator("[data-cro-mobile-sticky] .combo-link").get_attribute("href") or ""), mobile.locator("[data-cro-mobile-sticky] .combo-link").get_attribute("href") or "")
-              check("landing:testimonials-mobile", mobile.locator("#testimonios .testimonial-card").count() >= 3, f"count={mobile.locator('#testimonios .testimonial-card').count()}")
-              mobile.screenshot(path=str(OUT / "dia-lactancia-mobile.png"), full_page=True)
+              check("landing:single-proof-mobile", mobile.locator("[data-cro-proof-root] .testimonial-card").count() == 2, f"count={mobile.locator('[data-cro-proof-root] .testimonial-card').count()}")
+              mobile.screenshot(path=str(OUT / "dia-lactancia-final-mobile.png"), full_page=True)
+
+              # Tracking: una sola señal comercial web por carga.
+              tracking = browser.new_page(viewport={"width": 1000, "height": 800})
+              tracking.add_init_script("window.__QA_META_CALLS=[]; window.fbq=(...args)=>window.__QA_META_CALLS.push(args);")
+              tracking.goto(landing_url, wait_until="domcontentloaded")
+              tracking.wait_for_timeout(500)
+              calls = tracking.evaluate("window.__QA_META_CALLS")
+              inits = [x for x in calls if len(x) >= 1 and x[0] == 'init']
+              pageviews = [x for x in calls if len(x) >= 2 and x[0] == 'track' and x[1] == 'PageView']
+              viewcontents = [x for x in calls if len(x) >= 2 and x[0] == 'track' and x[1] == 'ViewContent']
+              check("tracking:one-pixel-init", len(inits) == 1, json.dumps(calls, ensure_ascii=False))
+              check("tracking:one-pageview-per-load", len(pageviews) == 1, json.dumps(calls, ensure_ascii=False))
+              check("tracking:one-viewcontent-per-load", len(viewcontents) == 1, json.dumps(calls, ensure_ascii=False))
 
               site_js = Path("public/site.js").read_text(encoding="utf-8")
               landing_js = Path("public/dia-de-lactancia/main.js").read_text(encoding="utf-8")
               testimonials_js = Path("public/testimonials.js").read_text(encoding="utf-8")
               check("privacy:no-JourneySelection", "JourneySelection" not in site_js, "health-stage selection not sent to Meta")
-              check("privacy:testimonials-auth-guard", "authorization_confirmed === true" in landing_js and "publication_ready !== false" in landing_js, "authorization and editorial hold guards")
-              check("privacy:held-clinical-result-not-related", "publication_ready: false" in testimonials_js and "related_pages: []" in testimonials_js, "specific weight-result testimonial held from publication")
-              check("tracking:no-duplicate-InitiateCheckout", "InitiateCheckout" not in landing_js, "Hotmart remains checkout event source")
+              check("privacy:testimonials-auth-guard", "authorization_confirmed === true" in testimonials_js and "publication_ready !== false" in testimonials_js, "canonical testimonial renderer guards publication")
+              check("privacy:held-clinical-result-not-related", "publication_ready: false" in testimonials_js and "related_pages: []" in testimonials_js, "specific weight-result testimonial held")
+              check("tracking:document-guard-present", "__MYM_LANDING_META_SENT__" in landing_js, "single-load guard")
+              check("tracking:no-InitiateCheckout", "InitiateCheckout" not in landing_js, "Hotmart remains checkout source")
+              check("tracking:no-Purchase", "fbq('track','Purchase'" not in landing_js and '"Purchase"' not in landing_js, "Hotmart remains Purchase source")
               check("tracking:page-type-workshop", "page_type:'WORKSHOP'" in landing_js, "normalized taxonomy")
               check("browser:no-desktop-js-errors", not js_errors, json.dumps(js_errors, ensure_ascii=False))
               check("browser:no-mobile-js-errors", not m_js_errors, json.dumps(m_js_errors, ensure_ascii=False))
@@ -166,16 +187,20 @@ jobs:
               "total": len(checks),
           }
           (OUT / "qa-results.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
-          lines = ["# Mujer y Maternidad — Día de Lactancia CRO Browser QA", "", f"**Status:** `{summary['status']}`", f"**Checks:** `{summary['passed']}/{summary['total']}`", ""]
-          lines += [f"- {'PASS' if x['pass'] else 'FAIL'} — `{x['name']}` — {x['detail']}" for x in checks]
-          (OUT / "qa-summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          (OUT / "qa-summary.md").write_text(
+              "# Mujer y Maternidad — Final Web Browser QA\n\n"
+              + f"**Status:** `{summary['status']}`\n**Checks:** `{summary['passed']}/{summary['total']}`\n\n"
+              + "\n".join(f"- {'PASS' if x['pass'] else 'FAIL'} — `{x['name']}` — {x['detail']}" for x in checks)
+              + "\n",
+              encoding="utf-8",
+          )
           print(f"BROWSER_QA_STATUS={summary['status']}")
           print(f"BROWSER_QA_CHECKS={summary['passed']}/{summary['total']}")
           if failures:
               print("BROWSER_QA_FAILURES=" + ",".join(failures))
               raise SystemExit(1)
           PY
-          python /tmp/cro_qa.py
+          python /tmp/final_web_qa.py
 
       - name: Show QA summary
         if: always()
@@ -188,6 +213,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mujer-maternidad-dia-lactancia-cro-browser-qa
+          name: mujer-maternidad-final-web-browser-qa
           path: qa-artifacts/
           if-no-files-found: error
