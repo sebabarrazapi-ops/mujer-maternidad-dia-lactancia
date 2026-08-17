@@ -1,0 +1,78 @@
+name: Admin MVP v1 QA
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  admin-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Start Worker locally
+        run: |
+          npx wrangler@4 dev --local --port 8787 --var ADMIN_PASSWORD:testpass > /tmp/wrangler.log 2>&1 &
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:8787/ >/dev/null; then
+              echo "WORKER_READY=YES"
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/wrangler.log
+          exit 1
+
+      - name: Validate admin lifecycle
+        run: |
+          set -euo pipefail
+          BASE=http://127.0.0.1:8787
+          test "$(curl -s -o /dev/null -w '%{http_code}' $BASE/)" = "200"
+          test "$(curl -s -o /dev/null -w '%{http_code}' $BASE/administrar/)" = "200"
+          curl -fsS $BASE/api/content | grep -q '"theme":"coral"\|"theme": "coral"'
+
+          BAD=$(curl -s -o /tmp/bad.json -w '%{http_code}' -H 'content-type: application/json' -d '{"password":"wrong"}' $BASE/api/admin/login)
+          test "$BAD" = "401"
+
+          curl -fsS -c /tmp/cookies -H 'content-type: application/json' -d '{"password":"testpass"}' $BASE/api/admin/login | grep -q '"ok":true'
+          curl -fsS -b /tmp/cookies $BASE/api/admin/state > /tmp/state.json
+          node -e "const s=require('/tmp/state.json'); if(!s.draft.pages.home) process.exit(1)"
+
+          node <<'NODE'
+          const fs=require('fs');
+          const s=JSON.parse(fs.readFileSync('/tmp/state.json','utf8'));
+          s.draft.theme='salvia';
+          s.draft.pages.home.texts.heroTitle='Título de prueba editorial';
+          fs.writeFileSync('/tmp/draft.json',JSON.stringify(s.draft));
+          NODE
+          curl -fsS -b /tmp/cookies -X PUT -H 'content-type: application/json' --data-binary @/tmp/draft.json $BASE/api/admin/draft | grep -q '"ok":true'
+          curl -fsS -b /tmp/cookies "$BASE/api/content?preview=1" | grep -q 'Título de prueba editorial'
+          curl -fsS -b /tmp/cookies -X POST $BASE/api/admin/publish | grep -q '"ok":true'
+          curl -fsS $BASE/api/content | grep -q 'Título de prueba editorial'
+
+          node <<'NODE'
+          const fs=require('fs');
+          const d=JSON.parse(fs.readFileSync('/tmp/draft.json','utf8'));
+          d.theme='rosa';
+          fs.writeFileSync('/tmp/draft2.json',JSON.stringify(d));
+          NODE
+          curl -fsS -b /tmp/cookies -X PUT -H 'content-type: application/json' --data-binary @/tmp/draft2.json $BASE/api/admin/draft >/dev/null
+          curl -fsS -b /tmp/cookies -X POST $BASE/api/admin/publish >/dev/null
+          curl -fsS $BASE/api/content | grep -q '"theme":"rosa"'
+          curl -fsS -b /tmp/cookies -X POST $BASE/api/admin/rollback | grep -q '"ok":true'
+          curl -fsS $BASE/api/content | grep -q '"theme":"salvia"'
+
+          curl -fsS -b /tmp/cookies -X POST $BASE/api/admin/logout | grep -q '"ok":true'
+          test "$(curl -s -o /dev/null -w '%{http_code}' -b /tmp/cookies $BASE/api/admin/state)" = "401"
+
+      - name: Show Worker log
+        if: always()
+        run: cat /tmp/wrangler.log || true
