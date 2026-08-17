@@ -23,22 +23,12 @@
   favicon.type = 'image/svg+xml';
   favicon.href = BRAND_MARK;
 
-  const applyLogo = () => {
-    document.querySelectorAll('.site-header .brand').forEach((brand) => {
-      brand.href = '/';
-      brand.classList.add('brand-logo-link');
-      brand.setAttribute('aria-label', 'Ir al inicio de Mujer y Maternidad');
-      brand.innerHTML = `<img class="brand-logo compact" src="${BRAND_LOGO}" alt="Mujer y Maternidad · Verónica Valencia · Matrona" />`;
-      const img = brand.querySelector('img');
-      if (img) {
-        img.addEventListener('error', () => {
-          brand.innerHTML = '<span class="brand-fallback">Mujer y Maternidad</span>';
-        }, { once: true });
-      }
-    });
-  };
-
-  applyLogo();
+  document.querySelectorAll('.site-header .brand').forEach((brand) => {
+    brand.href = '/';
+    brand.classList.add('brand-logo-link');
+    brand.setAttribute('aria-label', 'Ir al inicio de Mujer y Maternidad');
+    brand.innerHTML = `<img class="brand-logo compact" src="${BRAND_LOGO}" alt="Mujer y Maternidad · Verónica Valencia · Matrona" />`;
+  });
 
   const menuButton = document.querySelector('[data-menu-toggle]');
   const navLinks = document.querySelector('.nav-links');
@@ -50,11 +40,9 @@
   }
 
   const content = window.MYM_CONTENT || {};
-
   const readContentPath = (pathString) => {
-    const path = pathString.split('.');
     let value = content;
-    path.forEach((key) => { value = value?.[key]; });
+    pathString.split('.').forEach((key) => { value = value?.[key]; });
     return value;
   };
 
@@ -73,9 +61,7 @@
   }
 
   const trustRoot = document.querySelector('[data-trust-signals]');
-  if (trustRoot) {
-    trustRoot.innerHTML = (content.trustSignals || []).map((signal) => `<span class="trust-signal">${signal}</span>`).join('');
-  }
+  if (trustRoot) trustRoot.innerHTML = (content.trustSignals || []).map((signal) => `<span class="trust-signal">${signal}</span>`).join('');
 
   const pillarsRoot = document.querySelector('[data-professional-pillars]');
   if (pillarsRoot) {
@@ -102,8 +88,7 @@
 
   const freeRoot = document.querySelector('[data-free-resources]');
   if (freeRoot) {
-    const resources = content.freeResources || [];
-    freeRoot.innerHTML = resources.map((item) => `<article class="card resource-card"><span class="card-tag">${item.type === 'pdf' ? 'LECTURA' : 'RECURSO GRATUITO'}</span><h3>${item.title}</h3><p>${item.description}</p><a class="btn btn-secondary" href="${item.url}" target="_blank" rel="noopener noreferrer">Abrir recurso</a></article>`).join('');
+    freeRoot.innerHTML = (content.freeResources || []).map((item) => `<article class="card resource-card"><span class="card-tag">${item.type === 'pdf' ? 'LECTURA' : 'RECURSO GRATUITO'}</span><h3>${item.title}</h3><p>${item.description}</p><a class="btn btn-secondary" href="${item.url}" target="_blank" rel="noopener noreferrer">Abrir recurso</a></article>`).join('');
   }
 
   const productRoot = document.querySelector('[data-digital-products]');
@@ -111,70 +96,56 @@
     const products = content.catalogs?.digitalProducts || [];
     productRoot.innerHTML = products.map((product) => {
       const active = product.status === 'active' && product.url;
-      const cta = active
-        ? `<a class="btn btn-secondary" href="${product.url}">Ver producto${product.price ? ` · ${product.price}` : ''}</a>`
-        : `<span class="catalog-status">Próximamente</span>`;
+      const cta = active ? `<a class="btn btn-secondary" href="${product.url}">Ver producto${product.price ? ` · ${product.price}` : ''}</a>` : `<span class="catalog-status">Próximamente</span>`;
       return `<article class="card product-card"><span class="card-tag">${product.type === 'ebook' ? 'EBOOK' : 'RECURSO DIGITAL'}</span><h3>${product.title}</h3><p>${product.description}</p>${cta}</article>`;
     }).join('');
   }
 
-  const testimonialSection = document.querySelector('[data-testimonials-section]');
-  const testimonialRoot = document.querySelector('[data-testimonials]');
-  if (testimonialSection && testimonialRoot) {
-    const testimonials = (content.testimonials || []).filter((item) => item.authorization_confirmed === true);
-    if (!testimonials.length) {
-      testimonialSection.hidden = true;
-    } else {
-      testimonialSection.hidden = false;
-      testimonialRoot.innerHTML = testimonials.map((item) => `<article class="testimonial-card"><div class="testimonial-mark">“</div><p>${item.quote}</p><strong>${item.publication_name || item.name || 'Testimonio verificado'}</strong>${item.service_context ? `<span>${item.service_context}</span>` : ''}</article>`).join('');
-    }
-  }
-
   document.querySelectorAll('[data-social]').forEach((link) => {
-    const key = link.dataset.social;
-    const url = content.contact?.[key];
+    const url = content.contact?.[link.dataset.social];
     if (url) link.href = url;
   });
 
+  const pageKey = document.body.dataset.analyticsPage || '';
+
+  if (pageKey === 'home') {
+    const h1 = document.querySelector('.hero h1');
+    const lead = document.querySelector('.hero .hero-lead');
+    if (h1) h1.textContent = 'Información clara y acompañamiento profesional para embarazo, parto, postparto y lactancia';
+    if (lead) lead.textContent = 'Soy Verónica Andrea Valencia Yáñez, Matrona. Aquí puedes encontrar consultas, talleres y recursos prácticos para comprender mejor cada etapa y elegir el apoyo que necesitas.';
+    document.querySelector('.phase-a-note')?.remove();
+
+    // Evita que la Home se convierta en un catálogo repetitivo. Conserva ruta, oferta, prueba y autoridad.
+    document.querySelector('.hub-section')?.remove();
+    document.querySelector('#areas')?.remove();
+    document.querySelector('#recursos')?.remove();
+
+    const eventSection = Array.from(document.querySelectorAll('section')).find((s) => s.querySelector('.event-card'));
+    const testimonialsSection = document.querySelector('[data-testimonials-section]');
+    if (eventSection && testimonialsSection) eventSection.insertAdjacentElement('afterend', testimonialsSection);
+  }
+
   document.querySelectorAll('footer p').forEach((paragraph) => {
     const text = paragraph.textContent.trim().toLowerCase();
-    const isGenericDisclaimer = text.includes('información educativa') || text.includes('fines educativos') || text.includes('no reemplaza una evaluación');
-    if (isGenericDisclaimer) paragraph.remove();
+    if (text.includes('información educativa') || text.includes('fines educativos') || text.includes('no reemplaza una evaluación')) paragraph.remove();
   });
 
   document.querySelectorAll('footer').forEach((footer) => {
     if (footer.querySelector('[data-edin-credit]')) return;
     const credit = document.createElement('div');
-    credit.setAttribute('data-edin-credit', 'true');
+    credit.dataset.edinCredit = 'true';
     credit.textContent = 'Sitio web creado por Servicio de Gestión EDIN';
-    credit.style.maxWidth = '1180px';
-    credit.style.margin = '18px auto 0';
-    credit.style.padding = '14px 24px 0';
-    credit.style.borderTop = '1px solid rgba(255,255,255,.16)';
-    credit.style.fontSize = '.82rem';
-    credit.style.lineHeight = '1.4';
-    credit.style.opacity = '.72';
-    credit.style.textAlign = 'center';
+    credit.style.cssText = 'max-width:1180px;margin:18px auto 0;padding:14px 24px 0;border-top:1px solid rgba(255,255,255,.16);font-size:.82rem;line-height:1.4;opacity:.72;text-align:center';
     footer.appendChild(credit);
   });
 
-  const pageKey = document.body.dataset.analyticsPage || '';
-  const pageMeta = content.analytics?.[pageKey] || {
-    pageId: pageKey || 'unknown',
-    pageType: 'GENERAL',
-    pageName: document.title
-  };
-
+  const pageMeta = content.analytics?.[pageKey] || { pageId: pageKey || 'unknown', pageType: 'GENERAL', pageName: document.title };
   const pixelId = '1060562626332842';
-  if (!window.fbq) {
+  if (!window.__MYM_GLOBAL_META_SENT__) {
+    window.__MYM_GLOBAL_META_SENT__ = true;
     const script = document.createElement('script');
-    const safeMeta = JSON.stringify({
-      page_id: pageMeta.pageId,
-      page_type: pageMeta.pageType,
-      page_name: pageMeta.pageName,
-      page_path: window.location.pathname
-    });
-    script.text = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${pixelId}');fbq('track','PageView',${safeMeta});`;
+    const safeMeta = JSON.stringify({ page_id: pageMeta.pageId, page_type: pageMeta.pageType, page_name: pageMeta.pageName, page_path: window.location.pathname });
+    script.text = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${pixelId}');fbq('track','PageView',${safeMeta});`;
     document.head.appendChild(script);
   }
 })();
