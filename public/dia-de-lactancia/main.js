@@ -63,7 +63,6 @@
     }
   }
 
-  // La landing de campaña debe ser corta: una sola prueba social y sin bloques repetidos.
   document.querySelector('.trust-strip')?.remove();
   document.querySelector('.purchase-steps-section')?.remove();
   document.querySelector('.international-section')?.remove();
@@ -196,8 +195,11 @@
     footer.appendChild(credit);
   });
 
-  // Un solo PageView/ViewContent por carga de documento. Hotmart conserva checkout/Purchase.
-  if (cfg.metaPixelId && !window.__MYM_LANDING_META_SENT__) {
+  const hostname = window.location.hostname.toLowerCase();
+  const metaTrackingAllowed = hostname === 'mujerymaternidad.cl' || hostname === 'www.mujerymaternidad.cl' || hostname === 'localhost' || hostname === '127.0.0.1';
+
+  // Un solo PageView/ViewContent por carga y nunca desde dominios técnicos como *.workers.dev.
+  if (metaTrackingAllowed && cfg.metaPixelId && !window.__MYM_LANDING_META_SENT__) {
     window.__MYM_LANDING_META_SENT__ = true;
     const script = document.createElement('script');
     const pagePath = window.location.pathname;
