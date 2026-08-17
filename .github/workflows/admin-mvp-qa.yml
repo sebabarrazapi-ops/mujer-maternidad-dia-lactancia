@@ -43,6 +43,14 @@ jobs:
           curl -fsS $BASE/api/content > /tmp/public0.json
           assert_file_contains /tmp/public0.json '"theme":"coral"'
 
+          echo "QA_STEP=client-login-handler"
+          grep -q "const form = e.currentTarget" public/administrar/admin.js
+          grep -q "form.reset()" public/administrar/admin.js
+          if grep -q "e.currentTarget.reset()" public/administrar/admin.js; then
+            echo "ASSERT_FAIL stale async currentTarget reset remains"
+            exit 1
+          fi
+
           echo "QA_STEP=auth-reject"
           BAD=$(curl -s -o /tmp/bad.json -w '%{http_code}' -H 'content-type: application/json' -d '{"password":"wrong"}' $BASE/api/admin/login)
           test "$BAD" = "401"
@@ -93,7 +101,6 @@ jobs:
           assert_file_contains /tmp/public3.json 'Título de prueba editorial'
 
           echo "QA_STEP=logout"
-          # -c persiste el Set-Cookie de expiración; un navegador real hace lo mismo.
           curl -fsS -b /tmp/cookies -c /tmp/cookies -X POST $BASE/api/admin/logout > /tmp/logout.json
           assert_file_contains /tmp/logout.json '"ok":true'
           test "$(curl -s -o /dev/null -w '%{http_code}' -b /tmp/cookies $BASE/api/admin/state)" = "401"
