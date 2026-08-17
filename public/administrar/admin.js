@@ -1,130 +1,42 @@
 (() => {
-  const $ = (s) => document.querySelector(s);
-  const login = $('[data-login]'), app = $('[data-app]'), status = $('[data-status]'), loginStatus = $('[data-login-status]');
-  const pageSelect = $('[data-page]'), fieldsRoot = $('[data-fields]'), sectionsRoot = $('[data-sections]'), palettesRoot = $('[data-palettes]'), frame = $('[data-frame]');
-  let state = null;
-
-  const schema = {
-    home: {
-      path:'/',
-      fields:[
-        ['heroTitle','Título principal'],['heroLead','Texto principal'],['journeyTitle','Título “¿En qué etapa estás?”'],['journeyLead','Texto de etapas'],
-        ['guidanceTitle','Título orientación'],['guidanceLead','Texto orientación'],['pillarsTitle','Título formas de acompañarte'],['pillarsLead','Texto formas de acompañarte'],
-        ['eventTitle','Título evento'],['eventLead','Texto evento'],['testimonialsTitle','Título testimonios'],['resourcesTitle','Título recursos'],['aboutTitle','Título sobre Verónica'],['contactTitle','Título contacto']
-      ],
-      sections:{trust:'Señales de confianza',journey:'¿En qué etapa estás?',guidance:'Orientación general',pillars:'Formas de acompañarte',event:'Día de Lactancia',testimonials:'Testimonios',resources:'Recursos gratuitos',about:'Sobre Verónica',contact:'Contacto'}
-    },
-    day: {
-      path:'/dia-de-lactancia/',
-      fields:[['heroTitle','Título principal'],['heroLead','Texto principal'],['proofTitle','Título testimonios'],['fitTitle','Título “Es para ti”'],['pricingTitle','Título opciones'],['introTitle','Título Taller 1'],['bankTitle','Título Taller 2'],['profileTitle','Nombre / autoridad'],['faqTitle','Título preguntas frecuentes'],['finalTitle','Título cierre']],
-      sections:{proof:'Testimonios',fit:'¿Es para ti?',pricing:'Opciones de compra',intro:'Introducción a la Lactancia',bank:'Banco de Leche',profile:'Sobre Verónica',faq:'Preguntas frecuentes',final:'Cierre / CTA'}
-    }
-  };
-  const paletteMeta = {coral:['Coral','#b86b63'],terracota:['Terracota','#a95f50'],rosa:['Rosa','#b96f7d'],salvia:['Salvia','#718b79'],ciruela:['Ciruela','#8c6174']};
-  const PREVIEW_KEY = 'mym-editorial-preview-v1';
-
-  const api = async (url, options={}) => {
-    const r = await fetch(url,{credentials:'same-origin',headers:{'content-type':'application/json',...(options.headers||{})},...options});
-    const data = await r.json().catch(()=>({}));
-    if (!r.ok) throw new Error(data.error || `Error ${r.status}`);
-    return data;
-  };
-  const msg = (text, error=false) => { status.textContent=text; status.classList.toggle('error',error); };
-  const previewUrl = () => `${schema[pageSelect.value].path}?editorial_preview=1&v=${Date.now()}`;
-  const rememberPreview = () => {
-    if (!state?.draft) return;
-    try { sessionStorage.setItem(PREVIEW_KEY, JSON.stringify(state.draft)); } catch {}
-  };
-  const refreshFrame = () => { rememberPreview(); frame.src = previewUrl(); };
-  const syncLivePreview = () => {
-    if (!state?.draft || !frame.contentWindow) return;
-    rememberPreview();
-    frame.contentWindow.postMessage({type:'mym-editorial-preview',config:state.draft}, location.origin);
-  };
-  const sameConfig = (a,b) => JSON.stringify(a) === JSON.stringify(b);
-  const saveAndVerifyDraft = async () => {
-    const r = await api('/api/admin/draft',{method:'PUT',body:JSON.stringify(state.draft)});
-    state.draft = r.draft;
-    const persisted = await api('/api/content?preview=1');
-    if (!sameConfig(persisted,state.draft)) throw new Error('El borrador se guardó, pero la verificación del servidor no coincide. No publiques todavía.');
-    rememberPreview();
-    return persisted;
-  };
-  frame.addEventListener('load', () => setTimeout(syncLivePreview, 60));
-
-  const renderPalettes = () => {
-    palettesRoot.innerHTML='';
-    Object.entries(paletteMeta).forEach(([key,[label,color]]) => {
-      const b=document.createElement('button'); b.type='button'; b.className='palette'+(state.draft.theme===key?' active':'');
-      b.innerHTML=`<i style="background:${color}"></i><span>${label}</span>`;
-      b.onclick=()=>{state.draft.theme=key;renderPalettes();syncLivePreview();}; palettesRoot.appendChild(b);
-    });
-  };
-  const renderFields = () => {
-    const page=pageSelect.value, values=state.draft.pages[page].texts;
-    fieldsRoot.innerHTML='';
-    schema[page].fields.forEach(([key,label])=>{
-      const wrap=document.createElement('label'); wrap.className='field';
-      const value=values[key]||''; const multiline=value.length>90 || key.toLowerCase().includes('lead');
-      wrap.innerHTML=`<span>${label}</span>${multiline?'<textarea></textarea>':'<input type="text" />'}`;
-      const input=wrap.querySelector('input,textarea'); input.value=value;
-      input.oninput=()=>{values[key]=input.value;syncLivePreview();};
-      fieldsRoot.appendChild(wrap);
-    });
-  };
-  const move = (key,dir) => {
-    const page=state.draft.pages[pageSelect.value], i=page.order.indexOf(key), j=i+dir;
-    if(i<0||j<0||j>=page.order.length)return;
-    [page.order[i],page.order[j]]=[page.order[j],page.order[i]];
-    renderSections();
-    syncLivePreview();
-  };
-  const renderSections = () => {
-    const pageKey=pageSelect.value, page=state.draft.pages[pageKey], labels=schema[pageKey].sections;
-    sectionsRoot.innerHTML='';
-    page.order.filter(k=>labels[k]).forEach((key)=>{
-      const row=document.createElement('div');row.className='section-row';
-      row.innerHTML=`<input type="checkbox" ${page.sections[key]!==false?'checked':''} aria-label="Mostrar ${labels[key]}"><strong>${labels[key]}</strong><div class="move"><button type="button" aria-label="Subir">↑</button><button type="button" aria-label="Bajar">↓</button></div>`;
-      row.querySelector('input').onchange=(e)=>{page.sections[key]=e.target.checked;syncLivePreview();};
-      const buttons=row.querySelectorAll('.move button');buttons[0].onclick=()=>move(key,-1);buttons[1].onclick=()=>move(key,1);
-      sectionsRoot.appendChild(row);
-    });
-  };
-  const render = () => { renderPalettes(); renderFields(); renderSections(); refreshFrame(); };
-  const load = async () => {
-    try { state=await api('/api/admin/state'); login.hidden=true; app.hidden=false; rememberPreview(); render(); }
-    catch(e){ login.hidden=false; app.hidden=true; }
-  };
-
-  $('[data-login-form]').addEventListener('submit',async(e)=>{
-    e.preventDefault();
-    const form = e.currentTarget;
-    loginStatus.textContent='Entrando…'; loginStatus.classList.remove('error');
-    try {
-      const password = new FormData(form).get('password');
-      await api('/api/admin/login',{method:'POST',body:JSON.stringify({password})});
-      form.reset();
-      await load();
-    }
-    catch(err){ loginStatus.textContent=err.message; loginStatus.classList.add('error'); }
-  });
-  pageSelect.onchange=render;
-  $('[data-save]').onclick=async()=>{try{msg('Guardando y verificando borrador…');await saveAndVerifyDraft();msg('Borrador guardado y verificado.');syncLivePreview();}catch(e){msg(e.message,true)}};
-  $('[data-preview]').onclick=async()=>{
-    const popup=window.open('about:blank','_blank');
-    try{
-      msg('Preparando vista previa…');
-      await saveAndVerifyDraft();
-      if (popup) {
-        try { popup.sessionStorage.setItem(PREVIEW_KEY, JSON.stringify(state.draft)); } catch {}
-        popup.location.href=previewUrl();
-      }
-      msg('Borrador guardado y verificado.');
-    }catch(e){if(popup)popup.close();msg(e.message,true)}
-  };
-  $('[data-publish]').onclick=async()=>{if(!confirm('¿Publicar estos cambios en el sitio?'))return;try{msg('Publicando…');await saveAndVerifyDraft();const r=await api('/api/admin/publish',{method:'POST'});state.published=r.published;state.draft=structuredClone(r.published);const visible=await api('/api/content');if(!sameConfig(visible,state.published))throw new Error('La publicación se guardó, pero la verificación pública no coincide todavía. No hagas más cambios hasta reintentar.');rememberPreview();msg('Cambios publicados y verificados.');syncLivePreview();}catch(e){msg(e.message,true)}};
-  $('[data-rollback]').onclick=async()=>{if(!confirm('¿Volver a la versión publicada anterior?'))return;try{msg('Restaurando…');const r=await api('/api/admin/rollback',{method:'POST'});state.published=r.published;state.draft=structuredClone(r.published);rememberPreview();msg('Versión anterior restaurada.');render();}catch(e){msg(e.message,true)}};
+  const $ = s => document.querySelector(s);
+  const login=$('[data-login]'),app=$('[data-app]'),status=$('[data-status]'),loginStatus=$('[data-login-status]');
+  const pageSelect=$('[data-page]'),fieldsRoot=$('[data-fields]'),sectionsRoot=$('[data-sections]'),palettesRoot=$('[data-palettes]'),frame=$('[data-frame]'),mediaRoot=$('[data-media]'),testimonialsRoot=$('[data-testimonials]'),customPagesRoot=$('[data-custom-pages]'),customEditor=$('[data-custom-page-editor]'),customFields=$('[data-custom-fields]'),customBlocks=$('[data-custom-blocks]');
+  let state=null;
+  const PREVIEW_KEY='mym-editorial-preview-v1';
+  const schema={home:{label:'Inicio',path:'/',fields:[['heroTitle','Título principal'],['heroLead','Texto principal'],['journeyTitle','Título “¿En qué etapa estás?”'],['journeyLead','Texto de etapas'],['guidanceTitle','Título orientación'],['guidanceLead','Texto orientación'],['pillarsTitle','Título formas de acompañarte'],['pillarsLead','Texto formas de acompañarte'],['eventTitle','Título evento'],['eventLead','Texto evento'],['testimonialsTitle','Título testimonios'],['resourcesTitle','Título recursos'],['aboutTitle','Título sobre Verónica'],['contactTitle','Título contacto']],media:{hero:'Imagen principal',about:'Imagen Sobre Verónica'},sections:{trust:'Señales de confianza',journey:'¿En qué etapa estás?',guidance:'Orientación general',pillars:'Formas de acompañarte',event:'Día de Lactancia',testimonials:'Testimonios',resources:'Recursos gratuitos',about:'Sobre Verónica',contact:'Contacto'}},day:{label:'Día de Lactancia',path:'/dia-de-lactancia/',fields:[['heroTitle','Título principal'],['heroLead','Texto principal'],['proofTitle','Título testimonios'],['fitTitle','Título “Es para ti”'],['pricingTitle','Título opciones'],['introTitle','Título Taller 1'],['bankTitle','Título Taller 2'],['profileTitle','Nombre / autoridad'],['faqTitle','Título preguntas frecuentes'],['finalTitle','Título cierre']],media:{hero:'Imagen principal',profile:'Imagen Sobre Verónica'},sections:{proof:'Testimonios',fit:'¿Es para ti?',pricing:'Opciones de compra',intro:'Introducción a la Lactancia',bank:'Banco de Leche',profile:'Sobre Verónica',faq:'Preguntas frecuentes',final:'Cierre / CTA'}}};
+  const paletteMeta={coral:['Coral','#b86b63'],terracota:['Terracota','#a95f50'],rosa:['Rosa','#b96f7d'],salvia:['Salvia','#718b79'],ciruela:['Ciruela','#8c6174']};
+  const api=async(url,options={})=>{const r=await fetch(url,{credentials:'same-origin',headers:{'content-type':'application/json',...(options.headers||{})},...options});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`Error ${r.status}`);return data;};
+  const msg=(t,e=false)=>{status.textContent=t;status.classList.toggle('error',e);};
+  const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+  const remember=()=>{if(state?.draft)try{sessionStorage.setItem(PREVIEW_KEY,JSON.stringify(state.draft));}catch{}};
+  const selectedCustom=()=>pageSelect.value.startsWith('custom:')?state.draft.customPages.find(p=>p.id===pageSelect.value.slice(7)):null;
+  const previewUrl=()=>{const p=selectedCustom();return p?`/paginas/${p.slug}/?editorial_preview=1&v=${Date.now()}`:`${schema[pageSelect.value].path}?editorial_preview=1&v=${Date.now()}`;};
+  const refreshFrame=()=>{remember();frame.src=previewUrl();};
+  const sync=()=>{remember();if(!selectedCustom()&&frame.contentWindow)frame.contentWindow.postMessage({type:'mym-editorial-preview',config:state.draft},location.origin);else refreshFrame();};
+  frame.addEventListener('load',()=>setTimeout(()=>{if(!selectedCustom())sync();},60));
+  const save=async()=>{const r=await api('/api/admin/draft',{method:'PUT',body:JSON.stringify(state.draft)});state.draft=r.draft;const persisted=await api('/api/content?preview=1');if(!same(persisted,state.draft))throw new Error('El borrador se guardó, pero la verificación del servidor no coincide.');remember();return persisted;};
+  const renderPageOptions=()=>{const current=pageSelect.value||'home';pageSelect.innerHTML=Object.entries(schema).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')+(state.draft.customPages||[]).map(p=>`<option value="custom:${p.id}">Página · ${p.title}</option>`).join('');if([...pageSelect.options].some(o=>o.value===current))pageSelect.value=current;else pageSelect.value='home';};
+  const renderPalettes=()=>{palettesRoot.innerHTML='';Object.entries(paletteMeta).forEach(([k,[label,color]])=>{const b=document.createElement('button');b.type='button';b.className='palette'+(state.draft.theme===k?' active':'');b.innerHTML=`<i style="background:${color}"></i><span>${label}</span>`;b.onclick=()=>{state.draft.theme=k;renderPalettes();sync();};palettesRoot.appendChild(b);});};
+  const renderFields=()=>{const key=pageSelect.value;if(!schema[key]){fieldsRoot.innerHTML='';return;}const values=state.draft.pages[key].texts;fieldsRoot.innerHTML='';schema[key].fields.forEach(([name,label])=>{const w=document.createElement('label');w.className='field';const value=values[name]||'',multi=value.length>90||name.toLowerCase().includes('lead');w.innerHTML=`<span>${label}</span>${multi?'<textarea></textarea>':'<input type="text">'}`;const i=w.querySelector('input,textarea');i.value=value;i.oninput=()=>{values[name]=i.value;sync();};fieldsRoot.appendChild(w);});};
+  const renderMedia=()=>{const key=pageSelect.value;if(!schema[key]){mediaRoot.innerHTML='';return;}const media=state.draft.pages[key].media||{};mediaRoot.innerHTML='';Object.entries(schema[key].media).forEach(([name,label])=>{const item=media[name]||(media[name]={url:'',alt:'',visible:true});const card=document.createElement('div');card.className='repeat-card';card.innerHTML=`<strong>${label}</strong><label>URL de imagen<input data-url type="url"></label><label>Texto alternativo<input data-alt type="text"></label><label class="check"><input data-visible type="checkbox"> Mostrar imagen</label>`;card.querySelector('[data-url]').value=item.url||'';card.querySelector('[data-alt]').value=item.alt||'';card.querySelector('[data-visible]').checked=item.visible!==false;card.querySelector('[data-url]').oninput=e=>{item.url=e.target.value;sync();};card.querySelector('[data-alt]').oninput=e=>{item.alt=e.target.value;sync();};card.querySelector('[data-visible]').onchange=e=>{item.visible=e.target.checked;sync();};mediaRoot.appendChild(card);});};
+  const moveSection=(key,dir)=>{const p=state.draft.pages[pageSelect.value],i=p.order.indexOf(key),j=i+dir;if(i<0||j<0||j>=p.order.length)return;[p.order[i],p.order[j]]=[p.order[j],p.order[i]];renderSections();sync();};
+  const renderSections=()=>{const key=pageSelect.value;if(!schema[key]){sectionsRoot.innerHTML='';return;}const p=state.draft.pages[key],labels=schema[key].sections;sectionsRoot.innerHTML='';p.order.filter(k=>labels[k]).forEach(k=>{const row=document.createElement('div');row.className='section-row';row.innerHTML=`<input type="checkbox" ${p.sections[k]!==false?'checked':''}><strong>${labels[k]}</strong><div class="move"><button type="button">↑</button><button type="button">↓</button></div>`;row.querySelector('input').onchange=e=>{p.sections[k]=e.target.checked;sync();};const bs=row.querySelectorAll('button');bs[0].onclick=()=>moveSection(k,-1);bs[1].onclick=()=>moveSection(k,1);sectionsRoot.appendChild(row);});};
+  const renderTestimonials=()=>{testimonialsRoot.innerHTML='';(state.draft.testimonials||[]).forEach((t,idx)=>{const c=document.createElement('div');c.className='repeat-card';c.innerHTML=`<div class="repeat-head"><strong>Testimonio ${idx+1}</strong><button type="button" class="danger small" data-delete>Eliminar</button></div><label>Testimonio<textarea data-quote></textarea></label><label>Nombre público<input data-name></label><label>Contexto<input data-context></label><div class="checks"><label class="check"><input type="checkbox" data-auth> Autorización confirmada</label><label class="check"><input type="checkbox" data-ready> Publicar</label><label class="check"><input type="checkbox" data-home> Inicio</label><label class="check"><input type="checkbox" data-day> Día de Lactancia</label></div>`;c.querySelector('[data-quote]').value=t.quote||'';c.querySelector('[data-name]').value=t.publicationName||'';c.querySelector('[data-context]').value=t.serviceContext||'';c.querySelector('[data-auth]').checked=t.authorizationConfirmed===true;c.querySelector('[data-ready]').checked=t.publicationReady!==false;c.querySelector('[data-home]').checked=t.showHome!==false;c.querySelector('[data-day]').checked=t.showDay!==false;c.querySelector('[data-quote]').oninput=e=>{t.quote=e.target.value;sync();};c.querySelector('[data-name]').oninput=e=>{t.publicationName=e.target.value;sync();};c.querySelector('[data-context]').oninput=e=>{t.serviceContext=e.target.value;sync();};['auth','ready','home','day'].forEach(x=>c.querySelector(`[data-${x}]`).onchange=e=>{t[{auth:'authorizationConfirmed',ready:'publicationReady',home:'showHome',day:'showDay'}[x]]=e.target.checked;sync();});c.querySelector('[data-delete]').onclick=()=>{if(confirm('¿Eliminar este testimonio?')){state.draft.testimonials.splice(idx,1);renderTestimonials();sync();}};testimonialsRoot.appendChild(c);});};
+  const addTestimonial=()=>{state.draft.testimonials ||= [];state.draft.testimonials.push({id:`TEST-${Date.now()}`,quote:'',publicationName:'',serviceContext:'',authorizationConfirmed:false,publicationReady:false,showHome:true,showDay:true});renderTestimonials();};
+  const renderCustomPages=()=>{customPagesRoot.innerHTML='';(state.draft.customPages||[]).forEach((p,idx)=>{const c=document.createElement('div');c.className='repeat-card compact-card';c.innerHTML=`<div><strong>${p.title}</strong><small>/paginas/${p.slug}/ · ${p.status==='published'?'publicada':'borrador'}</small></div><div class="inline-actions"><button type="button" class="small secondary" data-edit>Editar</button><button type="button" class="small danger" data-delete>Eliminar</button></div>`;c.querySelector('[data-edit]').onclick=()=>{pageSelect.value=`custom:${p.id}`;render();};c.querySelector('[data-delete]').onclick=()=>{if(confirm('¿Eliminar esta página?')){state.draft.customPages.splice(idx,1);renderPageOptions();pageSelect.value='home';render();}};customPagesRoot.appendChild(c);});};
+  const newPage=()=>{const title=prompt('Nombre de la nueva página');if(!title)return;const slug=title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)||`pagina-${Date.now()}`;const p={id:`page-${Date.now()}`,title,slug,description:'',status:'draft',blocks:[{id:`block-${Date.now()}`,type:'text',title:'Título de sección',body:'Escribe aquí el contenido de esta sección.',visible:true}]};state.draft.customPages ||= [];state.draft.customPages.push(p);renderPageOptions();pageSelect.value=`custom:${p.id}`;render();};
+  const renderCustomEditor=()=>{const p=selectedCustom();customEditor.hidden=!p;if(!p){customFields.innerHTML='';customBlocks.innerHTML='';return;}customFields.innerHTML=`<label class="field">Título<input data-c-title></label><label class="field">URL / slug<input data-c-slug></label><label class="field">Descripción<textarea data-c-desc></textarea></label><label class="field">Estado<select data-c-status><option value="draft">Borrador</option><option value="published">Publicada</option></select></label>`;customFields.querySelector('[data-c-title]').value=p.title;customFields.querySelector('[data-c-slug]').value=p.slug;customFields.querySelector('[data-c-desc]').value=p.description||'';customFields.querySelector('[data-c-status]').value=p.status||'draft';customFields.querySelector('[data-c-title]').oninput=e=>{p.title=e.target.value;renderPageOptions();pageSelect.value=`custom:${p.id}`;sync();};customFields.querySelector('[data-c-slug]').oninput=e=>{p.slug=e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,'-');sync();};customFields.querySelector('[data-c-desc]').oninput=e=>{p.description=e.target.value;sync();};customFields.querySelector('[data-c-status]').onchange=e=>{p.status=e.target.value;renderCustomPages();sync();};renderCustomBlocks();};
+  const renderCustomBlocks=()=>{const p=selectedCustom();customBlocks.innerHTML='';if(!p)return;(p.blocks||[]).forEach((b,idx)=>{const c=document.createElement('div');c.className='repeat-card';const common=`<div class="repeat-head"><strong>${b.type.toUpperCase()}</strong><div class="inline-actions"><button type="button" class="small secondary" data-up>↑</button><button type="button" class="small secondary" data-down>↓</button><button type="button" class="small danger" data-delete>Eliminar</button></div></div><label>Título<input data-title></label>`;let extra=b.type==='image'?'<label>URL imagen<input data-image></label><label>Alt<input data-alt></label>':b.type==='faq'?'<label>Pregunta<input data-question></label><label>Respuesta<textarea data-answer></textarea></label>':b.type==='cta'?'<label>Texto<textarea data-body></textarea></label><label>Botón<input data-button-label></label><label>Enlace<input data-button-url></label>':b.type==='testimonials'?'<p class="help">Usa los testimonios autorizados del sitio.</p>':'<label>Texto<textarea data-body></textarea></label>';c.innerHTML=common+extra+'<label class="check"><input type="checkbox" data-visible> Mostrar bloque</label>';const bind=(sel,key)=>{const el=c.querySelector(sel);if(el){el.value=b[key]||'';el.oninput=e=>{b[key]=e.target.value;sync();};}};bind('[data-title]','title');bind('[data-image]','imageUrl');bind('[data-alt]','imageAlt');bind('[data-question]','question');bind('[data-answer]','answer');bind('[data-body]','body');bind('[data-button-label]','buttonLabel');bind('[data-button-url]','buttonUrl');c.querySelector('[data-visible]').checked=b.visible!==false;c.querySelector('[data-visible]').onchange=e=>{b.visible=e.target.checked;sync();};c.querySelector('[data-delete]').onclick=()=>{p.blocks.splice(idx,1);renderCustomBlocks();sync();};c.querySelector('[data-up]').onclick=()=>{if(idx>0){[p.blocks[idx-1],p.blocks[idx]]=[p.blocks[idx],p.blocks[idx-1]];renderCustomBlocks();sync();}};c.querySelector('[data-down]').onclick=()=>{if(idx<p.blocks.length-1){[p.blocks[idx+1],p.blocks[idx]]=[p.blocks[idx],p.blocks[idx+1]];renderCustomBlocks();sync();}};customBlocks.appendChild(c);});};
+  const addBlock=()=>{const p=selectedCustom();if(!p)return;const type=$('[data-block-type]').value;p.blocks.push({id:`block-${Date.now()}`,type,title:type==='faq'?'Pregunta frecuente':'Nueva sección',body:'',imageUrl:'',imageAlt:'',question:'',answer:'',buttonLabel:'Ver más',buttonUrl:'',visible:true});renderCustomBlocks();sync();};
+  const render=()=>{const custom=!!selectedCustom();document.querySelector('[data-global-style-section]').hidden=custom;document.querySelector('[data-texts-section]').hidden=custom;document.querySelector('[data-media-section]').hidden=custom;document.querySelector('[data-blocks-section]').hidden=custom;renderPalettes();renderFields();renderMedia();renderSections();renderTestimonials();renderCustomPages();renderCustomEditor();refreshFrame();};
+  const load=async()=>{try{state=await api('/api/admin/state');login.hidden=true;app.hidden=false;remember();renderPageOptions();render();}catch(e){login.hidden=false;app.hidden=true;}};
+  $('[data-login-form]').addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget;loginStatus.textContent='Entrando…';loginStatus.classList.remove('error');try{await api('/api/admin/login',{method:'POST',body:JSON.stringify({password:new FormData(form).get('password')})});form.reset();await load();}catch(err){loginStatus.textContent=err.message;loginStatus.classList.add('error');}});
+  pageSelect.onchange=render;$('[data-add-testimonial]').onclick=addTestimonial;$('[data-add-page]').onclick=newPage;$('[data-add-block]').onclick=addBlock;
+  $('[data-save]').onclick=async()=>{try{msg('Guardando y verificando borrador…');await save();msg('Borrador guardado y verificado.');sync();}catch(e){msg(e.message,true);}};
+  $('[data-preview]').onclick=async()=>{const popup=window.open('about:blank','_blank');try{msg('Preparando vista previa…');await save();if(popup){try{popup.sessionStorage.setItem(PREVIEW_KEY,JSON.stringify(state.draft));}catch{}popup.location.href=previewUrl();}msg('Borrador guardado y verificado.');}catch(e){if(popup)popup.close();msg(e.message,true);}};
+  $('[data-publish]').onclick=async()=>{if(!confirm('¿Publicar estos cambios en el sitio?'))return;try{msg('Publicando…');await save();const r=await api('/api/admin/publish',{method:'POST'});state.published=r.published;state.draft=structuredClone(r.published);const visible=await api('/api/content');if(!same(visible,state.published))throw new Error('La publicación se guardó, pero la verificación pública no coincide todavía.');remember();renderPageOptions();render();msg('Cambios publicados y verificados.');}catch(e){msg(e.message,true);}};
+  $('[data-rollback]').onclick=async()=>{if(!confirm('¿Volver a la versión publicada anterior?'))return;try{msg('Restaurando…');const r=await api('/api/admin/rollback',{method:'POST'});state.published=r.published;state.draft=structuredClone(r.published);remember();renderPageOptions();render();msg('Versión anterior restaurada.');}catch(e){msg(e.message,true);}};
   $('[data-logout]').onclick=async()=>{try{sessionStorage.removeItem(PREVIEW_KEY);}catch{}await api('/api/admin/logout',{method:'POST'}).catch(()=>{});location.reload();};
-
   load();
 })();
